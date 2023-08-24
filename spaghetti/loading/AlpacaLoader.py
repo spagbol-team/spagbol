@@ -1,5 +1,5 @@
 """
-Copyright 2023 [name of copyright owner]
+Copyright 2023 Spaghetti team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy of the License at
@@ -15,6 +15,7 @@ from urllib.error import HTTPError
 from validators import url as is_valid_url
 import os
 from datasets import load_dataset
+import numpy as np
 
 from spaghetti.loading.DataLoader import DataLoader
 from spaghetti.errors import InvalidSourceError
@@ -24,12 +25,12 @@ class AlpacaLoader(DataLoader):
     """
     Data loader for Alpaca dataset. Supports both base and clean version of the dataset.
     You can load the dataset from file with load_dataset method,
-    url or Huggigface Hub, for file and URL only CSV is supported.
+    url or Huggigface Hub, for file and URL only CSV and JSON are supported.
     Example usages:
-        For local csv file:
+        For local CSV/JSON file:
             loader = AlpacaLoader(source="/path/to/alpaca.csv")
             dataset = loader.load_data()
-        For remote csv:
+        For remote CSV/JSON:
             loader = AlpacaLoader(source="https://url/to/alpaca.csv")
             dataset = loader.load_data()
         For Huggigface Hub:
@@ -52,7 +53,10 @@ class AlpacaLoader(DataLoader):
         """
         if is_valid_url(self.source):
             try:
-                dataset = pd.read_csv(self.source)
+                if ".json" in self.source:
+                    dataset = pd.read_json(self.source)
+                else:
+                    dataset = pd.read_csv(self.source)
             except ParserError:
                 raise InvalidSourceError("Couldn't parse file from path or URL. Maybe it has a wrong format.")
             except HTTPError:
@@ -61,7 +65,10 @@ class AlpacaLoader(DataLoader):
                 )
         elif os.path.exists(self.source):
             try:
-                dataset = pd.read_csv(self.source)
+                if ".json" in self.source:
+                    dataset = pd.read_json(self.source)
+                else:
+                    dataset = pd.read_csv(self.source)
             except ParserError:
                 raise InvalidSourceError("Couldn't parse file from path or URL. Maybe it has a wrong format.")
             except UnicodeDecodeError:
@@ -90,6 +97,7 @@ class AlpacaLoader(DataLoader):
         :return: Converted dataset
         """
         output_dataset = pd.DataFrame()
+        dataset["input"] = dataset["input"].replace(np.nan, "")
         output_dataset["input"] = dataset["instruction"] + " " + dataset["input"]
         output_dataset["input"] = output_dataset["input"].apply(lambda x: x.strip())
         output_dataset["output"] = dataset["output"]
