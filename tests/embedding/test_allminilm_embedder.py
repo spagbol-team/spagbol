@@ -24,7 +24,11 @@ def test_mean_pooling():
     attention_mask = torch.tensor([[1, 1, 0], [1, 0, 0]])
 
     # Expected result is the mean of the embeddings of the actual tokens
-    expected_result = torch.sum(model_output[0] * attention_mask.unsqueeze(-1), dim=1) / torch.clamp(attention_mask.sum(dim=1, keepdim=True), min=1e-9)
+    expected_result = torch.sum(
+        model_output[0] * attention_mask.unsqueeze(-1), dim=1
+    ) / torch.clamp(
+        attention_mask.sum(dim=1, keepdim=True), min=1e-9
+    )
 
     # Check if the method returns the expected result
     result = embedder._mean_pooling(model_output, attention_mask)

@@ -12,27 +12,61 @@ language governing permissions and limitations under the License.
 from transformers import AutoTokenizer, AutoModel
 import torch
 import torch.nn.functional as F
+import numpy as np
 
 from spaghetti.embedding.Embedder import Embedder
 
-class AllMiniLMEmbedder:
+class AllMiniLMEmbedder(Embedder):
     """
     Embedder for all-MiniLM-L6-v2 model. This class is responsible for loading the model and tokenizer,
     and performing mean pooling on the model's output to generate sentence embeddings.
-    Example usages:
-        embedder = AllMiniLMEmbedder()
-        sentence_embeddings = embedder._mean_pooling(model_output, attention_mask)
-
-    :param _model: The all-MiniLM-L6-v2 model loaded from HuggingFace Hub.
-    :param _tokenizer: The tokenizer corresponding to the all-MiniLM-L6-v2 model.
     """
 
-    def __init__(self):
+    def _init_model(self):
         """
-        Initializes the model and tokenizer.
+        This method initializes the model
         """
-        self._model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
-        self._tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+        return AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+
+    def _init_tokenizer(self):
+        """
+        This method initializes the tokenizer
+        """
+        return AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+
+    def embed(self, data: str) -> np.array:
+        """
+        This method should embed the input data
+        :param data: Input data to be embedded
+        :return: Embedded data
+        """
+        # Tokenize the input data
+        inputs = self._tokenizer(data, return_tensors='pt', truncation=True, padding=True)
+
+        # Get the model's output
+        model_output = self._model(**inputs)
+
+        # Perform mean pooling on the model's output to generate sentence embeddings
+        embeddings = self._mean_pooling(model_output, inputs['attention_mask'])
+
+        return embeddings.detach().numpy()
+
+    def embed_batch(self, data: list[str]) -> np.array:
+        """
+        This method should embed the input data in batches
+        :param data: Input data to be embedded
+        :return: Embedded data
+        """
+        # Tokenize the input data
+        inputs = self._tokenizer(data, return_tensors='pt', truncation=True, padding=True)
+
+        # Get the model's output
+        model_output = self._model(**inputs)
+
+        # Perform mean pooling on the model's output to generate sentence embeddings
+        embeddings = self._mean_pooling(model_output, inputs['attention_mask'])
+
+        return embeddings.detach().numpy()
 
     def _mean_pooling(self, model_output: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         """
@@ -46,4 +80,3 @@ class AllMiniLMEmbedder:
         token_embeddings = model_output[0]
         input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
         return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
-
