@@ -22,6 +22,10 @@ class AllMiniLMEmbedder(Embedder):
     and performing mean pooling on the model's output to generate sentence embeddings.
     """
 
+    def __init__(self):
+        self._model = self._init_model()
+        self._tokenizer = self._init_tokenizer()
+
     def _init_model(self):
         """
         This method initializes the model
