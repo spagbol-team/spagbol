@@ -102,8 +102,11 @@ class AllMiniLMEmbedder(Embedder):
         """
         try:
             token_embeddings = model_output[0]
-            input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-            return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+            input_mask_expanded = attention_mask.unsqueeze(-1)
+            input_mask_expanded = input_mask_expanded.expand(token_embeddings.size()).float()
+            sum_embeddings = torch.sum(token_embeddings * input_mask_expanded, 1)
+            return sum_embeddings / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
         except Exception as e:
             print(f"Error during mean pooling: {e}")
             return None
+
