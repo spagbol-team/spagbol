@@ -45,3 +45,7 @@ class GaussianMixtureClustering(ClusteringModel):
     def fit_predict(self, data) -> np.array:
         # Fit the model to the data and predict the clusters
         return self._model.fit_predict(data)
+
+    def predict(self, data) -> np.array:
+        # Predict the clusters for the data
+        return self._model.predict(data)
