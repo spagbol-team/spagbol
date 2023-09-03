@@ -52,12 +52,7 @@ class OpticsClustering(ClusteringModel):
             print(f"Error fitting the model: {e}")
     
     def predict(self, data) -> np.array:
-        # Predict the clusters for the data
-        try:
-            return self._model.predict(data)
-        except Exception as e:
-            print(f"Error predicting the clusters: {e}")
-            return None
+        return self.fit_predict(data)
 
     def fit_predict(self, data) -> np.array:
         # Fit the model to the data and predict the clusters

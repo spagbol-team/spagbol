@@ -16,19 +16,35 @@ from spaghetti.clustering.OpticsClustering import OpticsClustering
 # python -m unittest tests.clustering.test_optics_clustering
 
 class TestOpticsClustering(unittest.TestCase):
-    def test_optics_clustering(self):
-        # Initialize the OpticsClustering
-        oc = OpticsClustering()
+    # Setup for the tests, initializing the OpticsClustering object 
+    # and generating random data
+    def setUp(self):
+        self.oc = OpticsClustering()
+        self.data = np.random.rand(100, 5)
 
-        # Create some dummy data
-        data = np.random.rand(100, 5)
+    # Test to check if the object is an instance of OpticsClustering
+    def test_initialization(self):
+        self.assertIsInstance(self.oc, OpticsClustering)
 
-        # Test the fit method
-        oc.fit(data)
+    # Test to check if the fit method works without throwing any exceptions
+    def test_fit(self):
+        try:
+            self.oc.fit(self.data)
+        except Exception as e:
+            self.fail(f"Test failed due to: {e}")
 
-        # Test the fit_predict method
-        clusters = oc.fit_predict(data)
-        self.assertEqual(clusters.shape[0], data.shape[0])
+    # Test to check if the predict method works correctly
+    def test_predict(self):
+        self.oc.fit(self.data)
+        clusters = self.oc.predict(self.data)
+        self.assertIsInstance(clusters, np.ndarray)
+        self.assertEqual(clusters.shape[0], self.data.shape[0])
+
+    # Test to check if the fit_predict method works correctly
+    def test_fit_predict(self):
+        clusters = self.oc.fit_predict(self.data)
+        self.assertIsInstance(clusters, np.ndarray)
+        self.assertEqual(clusters.shape[0], self.data.shape[0])
 
 if __name__ == '__main__':
     unittest.main()
