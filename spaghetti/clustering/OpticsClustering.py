@@ -31,20 +31,39 @@ class OpticsClustering(ClusteringModel):
     """
     def __init__(self):
         # Initialize the OPTICS model here
-        self._model: OPTICS = OPTICS()
+        try:
+            self._model: OPTICS = OPTICS()
+        except Exception as e:
+            print(f"Error initializing OPTICS model: {e}")
 
     def _init_model(self):
         # Initialize the OPTICS model here
-        self._model: OPTICS = OPTICS()
+        try:
+            self._model: OPTICS = OPTICS()
+        except Exception as e:
+            print(f"Error initializing OPTICS model: {e}")
+            return None
 
     def fit(self, data):
         # Fit the model to the data
-        self._model.fit(data)
+        try:
+            self._model.fit(data)
+        except Exception as e:
+            print(f"Error fitting the model: {e}")
     
     def predict(self, data) -> np.array:
         # Predict the clusters for the data
-        return self._model.predict(data)
+        try:
+            return self._model.predict(data)
+        except Exception as e:
+            print(f"Error predicting the clusters: {e}")
+            return None
 
     def fit_predict(self, data) -> np.array:
         # Fit the model to the data and predict the clusters
-        return self._model.fit_predict(data)
+        try:
+            return self._model.fit_predict(data)
+        except Exception as e:
+            print(f"Error fitting the model and predicting the clusters: {e}")
+            return None
+

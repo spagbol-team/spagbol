@@ -23,20 +23,31 @@ class AllMiniLMEmbedder(Embedder):
     """
 
     def __init__(self):
-        self._model = self._init_model()
-        self._tokenizer = self._init_tokenizer()
+        try:
+            self._model = self._init_model()
+            self._tokenizer = self._init_tokenizer()
+        except Exception as e:
+            print(f"Error initializing model or tokenizer: {e}")
 
     def _init_model(self):
         """
         This method initializes the model
         """
-        return AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+        try:
+            return AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+        except Exception as e:
+            print(f"Error initializing model: {e}")
+            return None
 
     def _init_tokenizer(self):
         """
         This method initializes the tokenizer
         """
-        return AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+        try:
+            return AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+        except Exception as e:
+            print(f"Error initializing tokenizer: {e}")
+            return None
 
     def embed(self, data: str) -> np.array:
         """
@@ -44,16 +55,20 @@ class AllMiniLMEmbedder(Embedder):
         :param data: Input data to be embedded
         :return: Embedded data
         """
-        # Tokenize the input data
-        inputs = self._tokenizer(data, return_tensors='pt', truncation=True, padding=True)
+        try:
+            # Tokenize the input data
+            inputs = self._tokenizer(data, return_tensors='pt', truncation=True, padding=True)
 
-        # Get the model's output
-        model_output = self._model(**inputs)
+            # Get the model's output
+            model_output = self._model(**inputs)
 
-        # Perform mean pooling on the model's output to generate sentence embeddings
-        embeddings = self._mean_pooling(model_output, inputs['attention_mask'])
+            # Perform mean pooling on the model's output to generate sentence embeddings
+            embeddings = self._mean_pooling(model_output, inputs['attention_mask'])
 
-        return embeddings.detach().numpy()
+            return embeddings.detach().numpy()
+        except Exception as e:
+            print(f"Error embedding data: {e}")
+            return None
 
     def embed_batch(self, data: list[str]) -> np.array:
         """
@@ -61,16 +76,20 @@ class AllMiniLMEmbedder(Embedder):
         :param data: Input data to be embedded
         :return: Embedded data
         """
-        # Tokenize the input data
-        inputs = self._tokenizer(data, return_tensors='pt', truncation=True, padding=True)
+        try:
+            # Tokenize the input data
+            inputs = self._tokenizer(data, return_tensors='pt', truncation=True, padding=True)
 
-        # Get the model's output
-        model_output = self._model(**inputs)
+            # Get the model's output
+            model_output = self._model(**inputs)
 
-        # Perform mean pooling on the model's output to generate sentence embeddings
-        embeddings = self._mean_pooling(model_output, inputs['attention_mask'])
+            # Perform mean pooling on the model's output to generate sentence embeddings
+            embeddings = self._mean_pooling(model_output, inputs['attention_mask'])
 
-        return embeddings.detach().numpy()
+            return embeddings.detach().numpy()
+        except Exception as e:
+            print(f"Error embedding batch data: {e}")
+            return None
 
     def _mean_pooling(self, model_output: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         """
@@ -81,6 +100,10 @@ class AllMiniLMEmbedder(Embedder):
         :param attention_mask: The attention mask generated during tokenization.
         :return: The sentence embeddings.
         """
-        token_embeddings = model_output[0]
-        input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-        return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+        try:
+            token_embeddings = model_output[0]
+            input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+            return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+        except Exception as e:
+            print(f"Error during mean pooling: {e}")
+            return None

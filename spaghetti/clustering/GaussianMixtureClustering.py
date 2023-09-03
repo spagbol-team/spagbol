@@ -33,19 +33,37 @@ class GaussianMixtureClustering(ClusteringModel):
         super().__init__()
 
         # Initialize the GaussianMixture model here
-        self._model: GaussianMixture = GaussianMixture()
+        try:
+            self._model: GaussianMixture = GaussianMixture()
+        except Exception as e:
+            print(f"Error initializing GaussianMixture model: {e}")
 
     def _init_model(self):
-        return GaussianMixture()
+        try:
+            return GaussianMixture()
+        except Exception as e:
+            print(f"Error initializing GaussianMixture model: {e}")
+            return None
 
     def fit(self, data):
         # Fit the model to the data
-        self._model.fit(data)
+        try:
+            self._model.fit(data)
+        except Exception as e:
+            print(f"Error fitting the model: {e}")
 
     def fit_predict(self, data) -> np.array:
         # Fit the model to the data and predict the clusters
-        return self._model.fit_predict(data)
+        try:
+            return self._model.fit_predict(data)
+        except Exception as e:
+            print(f"Error fitting and predicting the model: {e}")
+            return None
 
     def predict(self, data) -> np.array:
         # Predict the clusters for the data
-        return self._model.predict(data)
+        try:
+            return self._model.predict(data)
+        except Exception as e:
+            print(f"Error predicting the model: {e}")
+            return None
