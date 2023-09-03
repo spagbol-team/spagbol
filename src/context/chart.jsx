@@ -6,6 +6,7 @@ export function ChartDataProvider({ children }) {
   const [data, setData] = useState([])
   const [shownInstructionData, setShownInstructionData] = useState(null)
   const [shownOutputData, setShownOutputData] = useState(null)
+  const [isTextSearching, setIsTextSearching] = useState(false)
 
   const value = {
     data,
@@ -14,6 +15,8 @@ export function ChartDataProvider({ children }) {
     setShownInstructionData,
     shownOutputData,
     setShownOutputData,
+    isTextSearching,
+    setIsTextSearching,
   }
 
   return (

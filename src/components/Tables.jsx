@@ -1,3 +1,14 @@
+/*
+ * Copyright 2023 Spaghetti team
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+
 import { useEffect, useState } from "react"
 
 function THeader({ children }) {
@@ -38,14 +49,15 @@ function TableButton({children, ...props}) {
   )
 }
 
+const SHOWN_DATA = 6
+
 export function Tables({ title='Instructions', headers=[], dataKey=[], data=[] }) {
   const [page, setPage] = useState(1)
   const [partialData, setPartialData] = useState([])
-  const size = 7
 
   useEffect(() => {
-    const start = (page-1)*size
-    setPartialData([...data].slice(start, start+size))
+    const start = (page-1)*SHOWN_DATA
+    setPartialData([...data].slice(start, start+SHOWN_DATA))
   }, [data, page])
   
   return (
@@ -84,9 +96,6 @@ export function Tables({ title='Instructions', headers=[], dataKey=[], data=[] }
 
                 <span>Add data</span>
             </TableButton>
-            {/* <button className="flex items-center justify-center w-1/2 px-3 py-1 text-sm tracking-wide text-white transition-colors duration-200 bg-gray-900 rounded-lg shrink-0 sm:w-auto gap-x-2 hover:bg-gray-800 border-gray-900 hover:border-gray-800">
-                
-            </button> */}
         </div>
     </div>
 
@@ -105,12 +114,6 @@ export function Tables({ title='Instructions', headers=[], dataKey=[], data=[] }
                   <table className="min-w-full divide-y divide-gray-700">
                       <thead className="bg-gray-900">
                           <tr>
-                            {/* <THeader>
-                              <div className="flex items-center gap-x-3 focus:outline-none">
-                                <span>{title} word count</span>
-                                <ShortIcon />
-                              </div>
-                            </THeader> */}
                             {
                               headers.map(hd => (
                                 <THeader key={hd}>
@@ -118,9 +121,6 @@ export function Tables({ title='Instructions', headers=[], dataKey=[], data=[] }
                                 </THeader>
                               ))
                             }
-                            {/* <th scope="col" className="relative py-3.5 px-4">
-                              <span className="sr-only">Edit</span>
-                            </th> */}
                           </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-700 bg-gray-800">
@@ -153,7 +153,7 @@ export function Tables({ title='Instructions', headers=[], dataKey=[], data=[] }
 
     <div className="mt-6 sm:flex sm:items-center sm:justify-between ">
         <div className="text-sm text-gray-500 dark:text-gray-400">
-            Page <span className="font-medium text-gray-300">{page} of {Math.round(data.length/size)}</span> 
+            Page <span className="font-medium text-gray-300">{page} of {Math.round(data.length/SHOWN_DATA)}</span> 
         </div>
 
         <div className="flex items-center mt-4 gap-x-4 sm:mt-0">
@@ -175,13 +175,13 @@ export function Tables({ title='Instructions', headers=[], dataKey=[], data=[] }
               onClick={() => {
                 setPage(
                   Math.min(
-                    Math.round(data.length/size),
+                    Math.round(data.length/SHOWN_DATA),
                     page+1
                   )
                 )
               }}
               className="flex items-center justify-center w-1/2 px-5 py-2 text-sm capitalize transition-colors duration-200 border rounded-md sm:w-auto gap-x-2 bg-gray-900 text-gray-200 border-gray-700 hover:bg-gray-800 disabled:bg-gray-4 00"
-              disabled={page >= Math.round(data.length/size)}
+              disabled={page >= Math.round(data.length/SHOWN_DATA)}
             >
                 <span>
                     Next

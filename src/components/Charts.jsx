@@ -50,14 +50,13 @@ const DEFAULT_LAYOUT = {
       titleside: 'right'
     }
   },
-  // width: 580,
-  // height: 390,
   paper_bgcolor: '#343541',
   plot_bgcolor: '#343541',
   font: {
     color: 'white'
   },
-  // annotations: []
+  showlegend: false
+    // annotations: []
 }
 
 const CONFIG = {responsive: true}
@@ -70,8 +69,11 @@ export function Scatter({}) {
   const {
     data,
     setData,
+    shownInstructionData,
     setShownInstructionData,
+    shownOutputData,
     setShownOutputData,
+    isTextSearching,
   } = useChartData()
   const previewRef = useRef()
   previewRef.current = onPreview
@@ -84,13 +86,17 @@ export function Scatter({}) {
     const text_insturction = []
     const text_output = []
 
-    data.map(rs => {
+    const inputSrc = shownInstructionData && isTextSearching ? shownInstructionData: data
+    inputSrc.map(rs => {
       instruction_x.push(rs.instruction_x)
       instruction_y.push(rs.instruction_y)
+      text_insturction.push(`input: ${rs.input}\nword count: ${rs.instruction_word_count}\navg word len: ${rs.instruction_avg_word_len}`)
+    })
+    const outputSrc = shownOutputData && isTextSearching ? shownOutputData: data
+    outputSrc.map(rs => {
       output_x.push(rs.output_x)
       output_y.push(rs.output_y)
-      text_insturction.push(`input: ${rs.input}\nword count: ${rs.instruction_word_count}\navg word len: ${rs.instruction_avg_word_len}`)
-      text_output.push(`input: ${rs.output}\nword count: ${rs.output_word_count}\navg word len: ${rs.output_avg_word_len}`)
+      text_output.push(`output: ${rs.output}\nword count: ${rs.output_word_count}\navg word len: ${rs.output_avg_word_len}`)
     })
     const data1 = JSON.parse(JSON.stringify(trace1))
     data1.marker.color = instruction_x
@@ -99,7 +105,6 @@ export function Scatter({}) {
     data1.z = [...instruction_y]
     data1.text = text_insturction
     const layout1 = JSON.parse(JSON.stringify(DEFAULT_LAYOUT))
-    layout1.showlegend = false
     layout1.title = 'Clustered 2D Plot of Instructions Embedding'
     const instruction_chart = await Plotly.newPlot('chart1', {
       "data": [data1],
@@ -109,18 +114,22 @@ export function Scatter({}) {
       const points = eventData.points;
       const root = document.getElementById('chart1')
 
-      if (instruction_chart.data.length > 1)
-        Plotly.deleteTraces(root, 1)
+      const clickedName = 'Clicked Instruction'
       points.forEach(point => {
-        Plotly.addTraces(root, {
-          x: [point.x],
-          y: [point.y],
-          type: 'scatter',
-          mode: 'markers',
-          marker: {'color': 'red'},
-          name: 'Clicked Instruction',
-          prev_color: point.data.marker.color
-        })
+        if (instruction_chart.data.length > 1 || point.fullData.name === clickedName) {
+          Plotly.deleteTraces(root, 1)
+        } else {
+          Plotly.addTraces(root, {
+            x: [point.x],
+            y: [point.y],
+            type: 'scatter',
+            mode: 'markers',
+            marker: {'color': 'red'},
+            name: clickedName,
+            prev_color: point.data.marker.color,
+            text: point.text
+          })
+        }
       });
     })
     instruction_chart.on('plotly_selected', (eventData) => {
@@ -149,6 +158,7 @@ export function Scatter({}) {
       }
     })
 
+    // 2nd Layout
     const layout_2 = JSON.parse(JSON.stringify(DEFAULT_LAYOUT))
     layout_2.xaxis.title = 'answer_x'
     layout_2.yaxis.title = 'answer_y'
@@ -163,6 +173,29 @@ export function Scatter({}) {
       "data": [data2],
       "layout": layout_2,
     }, CONFIG)
+
+    answer_chart.on('plotly_click', (eventData) => {
+      const points = eventData.points;
+      const root = document.getElementById('chart2')
+
+      const clickedName = 'Clicked Instruction'
+      points.forEach(point => {
+        if (answer_chart.data.length > 1 || point.fullData.name === clickedName) {
+          Plotly.deleteTraces(root, 1)
+        } else {
+          Plotly.addTraces(root, {
+            x: [point.x],
+            y: [point.y],
+            type: 'scatter',
+            mode: 'markers',
+            marker: {'color': 'red'},
+            name: clickedName,
+            prev_color: point.data.marker.color,
+            text: point.text
+          })
+        }
+      });
+    })
     answer_chart.on('plotly_selected', (eventData) => {
       if (eventData) {
         const selectedPoints = eventData.points;
@@ -192,7 +225,7 @@ export function Scatter({}) {
 
   useEffect(() => {
     if(data.length) initPlot()
-  }, [data])
+  }, [data, isTextSearching])
 
   function deletePoints(type) {
     const newData = [...data]
