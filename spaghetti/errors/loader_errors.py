@@ -11,6 +11,9 @@ language governing permissions and limitations under the License.
 
 
 class InvalidSourceError(Exception):
+    """
+    Error class for Data Loaders that indicates that loading source is invalid
+    """
     def __init__(self, cause: str):
         self.cause = cause
 
