@@ -9,6 +9,7 @@
  * language governing permissions and limitations under the License.
  */
 
+import { useChartData } from "@/context/chart"
 import { useEffect, useState } from "react"
 
 function THeader({ children }) {
@@ -41,6 +42,14 @@ function ShortIcon() {
   )
 }
 
+function ThreeDotIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="w-6 h-6">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+    </svg>
+  )
+}
+
 function TableButton({children, ...props}) {
   return (
     <button className="flex items-center justify-center w-1/2 px-3 py-2 text-sm capitalize transition-colors duration-200 border rounded-lg sm:w-auto gap-x-2 bg-gray-900 text-gray-200 border-gray-700 hover:bg-gray-800" {...props}>
@@ -51,15 +60,45 @@ function TableButton({children, ...props}) {
 
 const SHOWN_DATA = 6
 
-export function Tables({ title='Instructions', headers=[], dataKey=[], data=[] }) {
+export function Table({
+  title='Instructions',
+  headers=[],
+  dataKey=[],
+  data=[],
+  onRemoveData
+}) {
   const [page, setPage] = useState(1)
   const [partialData, setPartialData] = useState([])
+  const [showMenuIdx, setShowMenuIdx] = useState()
+  const {
+    data: originalData,
+    setData,
+  } = useChartData()
 
   useEffect(() => {
     const start = (page-1)*SHOWN_DATA
     setPartialData([...data].slice(start, start+SHOWN_DATA))
   }, [data, page])
   
+  const openMenu = (idx) => {
+    setShowMenuIdx((prevValue) => idx !== prevValue ? idx: null)
+  }
+
+  function deletePoint(deletePoint, tableIdx) {
+    const idx = deletePoint.idx
+    const newData = [...originalData]
+
+    newData.splice(idx, 1)
+    setData(newData)
+
+    const newPartial = [...partialData]
+    newPartial.splice(tableIdx, 1)
+    if (data.length > page * SHOWN_DATA) {
+      newPartial.push(data[(page * SHOWN_DATA) - 1])
+    }
+    setData(newData)
+  }
+
   return (
     <section className="container px-4 mx-auto text-white mb-8">
       <div className="sm:flex sm:items-center sm:justify-between flex-wrap">
@@ -77,12 +116,12 @@ export function Tables({ title='Instructions', headers=[], dataKey=[], data=[] }
           <button className="flex items-center justify-center w-1/2 px-3 py-1 text-sm text-gray-700 transition-colors duration-200 bg-white border rounded-lg gap-x-2 sm:w-auto hover:bg-gray-100">
             <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5">
               <g clip-path="url(#clip0_3098_154395)">
-              <path d="M13.3333 13.3332L9.99997 9.9999M9.99997 9.9999L6.66663 13.3332M9.99997 9.9999V17.4999M16.9916 15.3249C17.8044 14.8818 18.4465 14.1806 18.8165 13.3321C19.1866 12.4835 19.2635 11.5359 19.0351 10.6388C18.8068 9.7417 18.2862 8.94616 17.5555 8.37778C16.8248 7.80939 15.9257 7.50052 15 7.4999H13.95C13.6977 6.52427 13.2276 5.61852 12.5749 4.85073C11.9222 4.08295 11.104 3.47311 10.1817 3.06708C9.25943 2.66104 8.25709 2.46937 7.25006 2.50647C6.24304 2.54358 5.25752 2.80849 4.36761 3.28129C3.47771 3.7541 2.70656 4.42249 2.11215 5.23622C1.51774 6.04996 1.11554 6.98785 0.935783 7.9794C0.756025 8.97095 0.803388 9.99035 1.07431 10.961C1.34523 11.9316 1.83267 12.8281 2.49997 13.5832" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M13.3333 13.3332L9.99997 9.9999M9.99997 9.9999L6.66663 13.3332M9.99997 9.9999V17.4999M16.9916 15.3249C17.8044 14.8818 18.4465 14.1806 18.8165 13.3321C19.1866 12.4835 19.2635 11.5359 19.0351 10.6388C18.8068 9.7417 18.2862 8.94616 17.5555 8.37778C16.8248 7.80939 15.9257 7.50052 15 7.4999H13.95C13.6977 6.52427 13.2276 5.61852 12.5749 4.85073C11.9222 4.08295 11.104 3.47311 10.1817 3.06708C9.25943 2.66104 8.25709 2.46937 7.25006 2.50647C6.24304 2.54358 5.25752 2.80849 4.36761 3.28129C3.47771 3.7541 2.70656 4.42249 2.11215 5.23622C1.51774 6.04996 1.11554 6.98785 0.935783 7.9794C0.756025 8.97095 0.803388 9.99035 1.07431 10.961C1.34523 11.9316 1.83267 12.8281 2.49997 13.5832" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"/>
               </g>
               <defs>
-              <clipPath id="clip0_3098_154395">
-              <rect width="20" height="20" fill="white"/>
-              </clipPath>
+                <clipPath id="clip0_3098_154395">
+                  <rect width="20" height="20" fill="white"/>
+                </clipPath>
               </defs>
             </svg>
 
@@ -91,10 +130,10 @@ export function Tables({ title='Instructions', headers=[], dataKey=[], data=[] }
 
             <TableButton>
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
 
-                <span>Add data</span>
+              <span>Add data</span>
             </TableButton>
         </div>
     </div>
@@ -121,6 +160,7 @@ export function Tables({ title='Instructions', headers=[], dataKey=[], data=[] }
                                 </THeader>
                               ))
                             }
+                            <th className="max-w-[32px]"></th>
                           </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-700 bg-gray-800">
@@ -134,13 +174,27 @@ export function Tables({ title='Instructions', headers=[], dataKey=[], data=[] }
                                   </p>
                                 </TData>
                               ))}
-                              {/* <TData>
-                                <button className="px-1 py-1 text-gray-100 transition-colors duration-200 rounded-lg bg-gray-600">
-                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="w-6 h-6">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
-                                  </svg>
+                              <td className="relative px-2 py-[2px]">
+                                <button
+                                  className="px-0 py-0 text-gray-100 transition-colors duration-200 rounded-lg bg-gray-600"
+                                  onClick={() => openMenu(idx)}
+                                >
+                                  <ThreeDotIcon />
+                                  {
+                                    showMenuIdx === idx ?
+                                    <div className="absolute left-[-90px] bottom-1 bg-white text-gray-800 text-sm border border-gray-700 rounded-lg">
+                                      <ul className="space-y-2 text-left">
+                                        <li className="hover:bg-gray-300 px-2 py-1 rounded-lg">Edit data</li>
+                                        <li
+                                          className="hover:bg-gray-300 px-2 py-1 rounded-lg"
+                                          onClick={() => deletePoint(dt,idx)}
+                                        >Delete data</li>
+                                      </ul>
+                                    </div>: 
+                                    ''
+                                  }
                                 </button>
-                              </TData> */}
+                              </td>
                             </tr>
                           ))
                         }
@@ -153,7 +207,7 @@ export function Tables({ title='Instructions', headers=[], dataKey=[], data=[] }
 
     <div className="mt-6 sm:flex sm:items-center sm:justify-between ">
         <div className="text-sm text-gray-500 dark:text-gray-400">
-            Page <span className="font-medium text-gray-300">{page} of {Math.round(data.length/SHOWN_DATA)}</span> 
+          Page <span className="font-medium text-gray-300">{page} of {Math.round(data.length/SHOWN_DATA)}</span> 
         </div>
 
         <div className="flex items-center mt-4 gap-x-4 sm:mt-0">
@@ -162,13 +216,13 @@ export function Tables({ title='Instructions', headers=[], dataKey=[], data=[] }
               className="flex items-center justify-center w-1/2 px-5 py-2 text-sm capitalize transition-colors duration-200 border rounded-md sm:w-auto gap-x-2 bg-gray-900 text-gray-200 border-gray-700 hover:bg-gray-800 disabled:bg-gray-400"
               disabled={page <= 1}
             >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="w-5 h-5 rtl:-scale-x-100">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
-                </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="w-5 h-5 rtl:-scale-x-100">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
+              </svg>
 
-                <span>
-                    previous
-                </span>
+              <span>
+                previous
+              </span>
             </button>
 
             <button
@@ -184,11 +238,11 @@ export function Tables({ title='Instructions', headers=[], dataKey=[], data=[] }
               disabled={page >= Math.round(data.length/SHOWN_DATA)}
             >
                 <span>
-                    Next
+                  Next
                 </span>
 
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="w-5 h-5 rtl:-scale-x-100">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
                 </svg>
             </button>
         </div>

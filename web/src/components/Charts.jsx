@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import Plotly from 'plotly.js-dist-min'
 import { useChartData } from '@/context/chart'
 
+/**
+ * THIS COMPONENT IS NOT USED ANYMORE MAYBE TEMPORARY
+ */
 
 const trace1 = {
   x: [1, 2, 3, 4],

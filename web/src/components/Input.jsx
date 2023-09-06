@@ -26,7 +26,7 @@ export function SearchInput({ onFind }) {
 
   const handleInputChange = (event) => {
     const value = event.target.value;
-    debounce(onFind, 300)(value);
+    debounce(onFind, 800)(value);
   };
 
   const clearInput = () => {

@@ -13,15 +13,19 @@ import './App.css'
 import { useEffect } from 'react'
 import { Scatter } from '@/components/CombinedCharts'
 // import { Scatter } from '@/components/Charts'
-import { Tables } from '@/components/Tables'
+import { Table } from '@/components/Table'
 import { SearchInput } from '@/components/Input'
 import { ChartDataProvider, useChartData } from '@/context/chart'
+import { SettingsProvider } from './context/settings'
+import { Header } from '@/components/Header'
 
 function App() {
   return (
-    <ChartDataProvider>
-      <HomePage />
-    </ChartDataProvider>
+    <SettingsProvider>
+      <ChartDataProvider>
+        <HomePage />
+      </ChartDataProvider>
+    </SettingsProvider>
   )
 }
 
@@ -36,7 +40,6 @@ function HomePage() {
     setShownInstructionData,
     shownOutputData,
     setShownOutputData,
-    setIsTextSearching,
   } = useChartData()
 
   async function getData() {
@@ -47,7 +50,19 @@ function HomePage() {
 
   useEffect(() => {
     getData()
-    .then(res => setData(res))
+    .then(res => {
+      let max_y_answer = 0
+      const OFFSET = max_y_answer * 4 || 300
+      res.map((rs,idx) => {
+        if (max_y_answer < rs.output_y) max_y_answer = rs.output_y
+        /** idx needed for deleting point as it will become only object and not array*/
+        rs.idx = idx
+      })
+      res.map(rs => {
+        rs.instruction_y = rs.instruction_y + OFFSET
+      })
+      setData(res)
+    })
     .catch(err => alert(err))
   }, [])
 
@@ -59,30 +74,18 @@ function HomePage() {
     setShownOutputData(partialData)
   }
 
-  function findWords(text) {
-    if (text) {
-      let filtered = data.filter(dt => dt.instruction.includes(text) || dt.input.includes(text) || dt.output.includes(text))
-      setShownInstructionData(filtered)
-      setShownOutputData(filtered)
-      setIsTextSearching(true)
-    } else {
-      setShownInstructionData(null)
-      setShownOutputData(null)
-      setIsTextSearching(false)
-    }
+  function removeOneData(idx) {
+    console.log("data", idx)
   }
 
   return (
     <div className="flex flex-col bg-main-bg-color text-third-bg-color h-screen">
-      <div className="w-screen flex justify-center py-4 border-b border-gray-600">
+      {/* <div className="w-screen flex justify-center py-4 border-b border-gray-600">
         <div>
-          <SearchInput onFind={findWords}/>
-          {/* Another filtering */}
-          {/* <div className="bg-secondary-bg-color text-sm  border-slate-600 hover:border-gray-400 p-1 border rounded-lg w-24 mt-4">
-            Treshold
-          </div> */}
+          <SearchInput />
         </div>
-      </div>
+      </div> */}
+      <Header />
       <div className="flex flex-1 h-full flex-wrap md:flex-nowrap">
         <div className="flex-1">
           <Scatter
@@ -92,16 +95,18 @@ function HomePage() {
           />
         </div>
         <div className="flex-1 border-l border-slate-600 py-4 max-w-sm md:max-w-none">
-          <Tables
+          <Table
             data={shownInstructionData ? shownInstructionData: data}
             headers={INSTRUCTION_KEY}
             dataKey={INSTRUCTION_KEY}
+            onRemoveData={removeOneData}
           />
-          <Tables
+          <Table
             title="Answers"
             data={shownOutputData ? shownOutputData: data}
             headers={ANSWER_KEY}
             dataKey={ANSWER_KEY}
+            onRemoveData={removeOneData}
           />
         </div>
       </div>

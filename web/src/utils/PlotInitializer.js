@@ -63,10 +63,16 @@ export default class PlotInitializer {
 
   #UNREMOVED_DATA = 3
 
-  constructor(data, inputSrc, outputSrc) {
+  constructor(data) {
     this.data = data;
-    this.inputSrc = inputSrc
-    this.outputSrc = outputSrc
+    /**
+     * TODO: 
+     * no need to separate inputSrc and outputSRC
+     */
+    // this.inputSrc = JSON.parse(JSON.stringify(data))
+    // this.outputSrc = JSON.parse(JSON.stringify(data))
+    // this.inputSrc = inputSrc
+    // this.outputSrc = outputSrc
     this.output_x = [];
     this.output_y = [];
     this.instruction_x = [];
@@ -76,30 +82,32 @@ export default class PlotInitializer {
     this.root = document.getElementById('chart1')
     this.chart = null
     this.chartId = 'chart1'
+    this.settings = {
+      enableTracing: true
+    }
   }
 
-    /**
-   * Will use class based initialization
-   * On TODO List
+  /**
+   * Initialization of the plotly chart
+   * 
+   * TODO: 
+   * no need to separate inputSrc and outputtSrc
    */
   async initPlot() {
     console.log("Initializing plot")
-    const inputSrc = this.inputSrc
-    let max_y_instruction = 0
-    inputSrc.map(rs => {
+
+    this.data.map(rs => {
       this.instruction_x.push(rs.instruction_x)
       this.instruction_y.push(rs.instruction_y)
-      if (max_y_instruction < rs.instruction_y) max_y_instruction = rs.instruction_y
-      this.text_insturction.push(`input: ${rs.input}\nword count: ${rs.instruction_word_count}\navg word len: ${rs.instruction_avg_word_len}`)
+      // if (max_y_instruction < rs.instruction_y) max_y_instruction = rs.instruction_y
+      this.text_insturction.push(this.#createInputText(rs))
+
+      this.output_x.push(rs.output_x)
+      this.output_y.push(rs.output_y)
+      // this.output_y.push(rs.output_y + OFFSET)
+      this.text_output.push(this.#createOutputText(rs))
     })
 
-    const OFFSET = max_y_instruction * 4 || 300
-    const outputSrc = this.outputSrc
-    outputSrc.map(rs => {
-      this.output_x.push(rs.output_x)
-      this.output_y.push(rs.output_y + OFFSET)
-      this.text_output.push(`output: ${rs.output}\nword count: ${rs.output_word_count}\navg word len: ${rs.output_avg_word_len}`)
-    })
     const data1 = JSON.parse(JSON.stringify(this.#TRACE_FORMAT))
     data1.marker.color = this.instruction_y
     data1.x = this.instruction_x
@@ -151,7 +159,10 @@ export default class PlotInitializer {
     const min = Math.min(...this.instruction_y);
     const median = (max + min) / 2
     const lineData = {
-      x: [Math.min(...this.instruction_x), Math.max(...this.instruction_x)],
+      x: [
+        Math.min(...[...this.instruction_x, ...this.output_x]),
+        Math.max(...[...this.instruction_x, ...this.output_x])
+    ],
       y: [median, median],
       type: 'scatter',
       mode: 'lines',
@@ -176,6 +187,24 @@ export default class PlotInitializer {
     return point.data.name === this.#OUTPUT_NAME
   }
 
+  #createInputText(dataPoint) {
+    return `input: ${dataPoint.input}\nword count: ${dataPoint.instruction_word_count}\navg word len: ${dataPoint.instruction_avg_word_len}`
+  }
+
+  #createOutputText(dataPoint) {
+    return `output: ${dataPoint.output}\nword count: ${dataPoint.output_word_count}\navg word len: ${dataPoint.output_avg_word_len}`
+  }
+
+  /**
+   * Setter method for this.settings
+   * 
+   * @param {Boolean} value - The settings object.
+   */
+  setEnableTracing(value) {
+    this.settings.enableTracing = value;
+  }
+  
+
   /**
    * Adds a mark point to the chart.
    * 
@@ -184,16 +213,23 @@ export default class PlotInitializer {
    * @param {string} name - The name of the mark point.
    * @param {Object} point - The point object.
    */  
-  addMarkPoint(xPoints, yPoints, name, point) {
-    Plotly.addTraces(this.root, {
-      x: xPoints,
-      y: yPoints,
+  async addMarkPoint(xPoints, yPoints, name, point) {
+    const dataProps = {
       type: 'scatter',
       mode: 'markers',
-      marker: {'color': 'red'},
-      name: name,
+      marker: {'color': 'red'}
+    }
+
+    Plotly.addTraces(this.root, {
+      ...dataProps,
+      x: xPoints,
+      y: yPoints,
+      name: name + ' input',
       prev_color: point.data.marker.color,
-      text: point.text
+      text: [
+        this.data[point.pointIndex].input,
+        this.data[point.pointIndex].output
+      ],
     })
   }
 
@@ -203,8 +239,8 @@ export default class PlotInitializer {
    * @param {number[]} xPoints - The x-coordinates of the line.
    * @param {number[]} yPoints - The y-coordinates of the line.
    */  
-  addLine(xPoints, yPoints) {
-    Plotly.addTraces(this.root, {
+  async addLine(xPoints, yPoints) {
+    return Plotly.addTraces(this.root, {
       x: xPoints,
       y: yPoints,
       type: 'scatter',
@@ -220,9 +256,8 @@ export default class PlotInitializer {
   /**
    * Resets all traces in the chart.
    */
-  
   resetTraces() {
-    console.log('reset traces', this.chart.data.length)
+    console.log('resetting traces')
     while(this.chart.data.length > this.#UNREMOVED_DATA) {
       Plotly.deleteTraces(this.root, this.#UNREMOVED_DATA)
     }
@@ -230,44 +265,65 @@ export default class PlotInitializer {
 
   /**
    * Adds a chart on click event.
-   * 
-   * @param {Function} setInstructionPointsIdx - The function to set the indices of clicked input points.
-   * @param {Function} setOutputPointsIdx - The function to set the indices of clicked output points.
+   * triggered when user click a point or the chart itself.
+   * based on plotly_click
+   * @param {Function} onEventData - Callback that is called when data about point clicked is ready
    */
-  addChartOnClickEvent(setInstructionPointsIdx, setOutputPointsIdx) {
-    
+  addChartOnClickEvent(onEventData) {
     this.chart.on('plotly_click', (eventData) => {
-      console.log('on plotly_click', eventData)
+
+      console.log('on plotly_click')
       const points = eventData.points;
 
       const clickedName = `Clicked`
+      let normalizedInput = []
+      let normalizedOutput = []
       const clickedInputIdx = []
       const clickedOutputIdx = [] 
-      points.forEach(point => {
-        if (this.chart.data.length > this.#UNREMOVED_DATA || point.fullData.name === clickedName) {
+      points.map(point => {
+        if (
+          this.chart.data.length > this.#UNREMOVED_DATA ||
+          point.fullData.name === clickedName
+        ) {
           this.resetTraces()
         } else {
           const target_x = this.isOutputData(point) ? this.instruction_x: this.output_x
           const target_y = this.isOutputData(point) ? this.instruction_y: this.output_y
-          if (this.isOutputData(point)) {
-            clickedOutputIdx.push(point.pointIndex)
-          } else {
-            clickedInputIdx.push(point.pointIndex)
+          const [
+            normalized_input,
+            normalized_output
+          ] = this.pointToNormalizedData(point)
+          
+          clickedOutputIdx.push(point.pointIndex) // also assign corresponding input
+          clickedInputIdx.push(point.pointIndex)
+          normalizedOutput.push(normalized_output)
+          normalizedInput.push(normalized_input)
+          const xList = [point.x]
+          const yList = [point.y]
+          if(this.settings.enableTracing) {
+            xList.push(target_x[point.pointIndex])
+            yList.push(target_y[point.pointIndex])
           }
+
           this.addMarkPoint(
-            [point.x, target_x[point.pointIndex]],
-            [point.y, target_y[point.pointIndex]],
+            xList,
+            yList,
             clickedName,
             point
           )
-          this.addLine(
-            [point.x, target_x[point.pointIndex]],
-            [point.y, target_y[point.pointIndex]]
-          )
+          
+          if(this.settings.enableTracing) {
+            this.addLine(
+              [point.x, target_x[point.pointIndex]],
+              [point.y, target_y[point.pointIndex]]
+            ).then(res => {
+              console.log('point created', res)
+            })
           }
-        });
-        setInstructionPointsIdx(clickedInputIdx)
-        setOutputPointsIdx(clickedOutputIdx)
+        }
+      });
+
+      if(onEventData) onEventData(normalizedInput, clickedInputIdx, normalizedOutput, clickedOutputIdx)
     })
   }
 
@@ -278,53 +334,80 @@ export default class PlotInitializer {
    * @param {Function} options.onEventData - The callback function to be called when there is event data. *_idxs means list of index of selected points, *_normalized means object ready for selected points
    * @param {Function} options.onEmptyData - The callback function to be called when there is no event data.
    */
-  addChartOnSelectedEvent({onEventData, onEmptyData}) {
+  addChartOnSelectedEvent({onSelectionStart, onEventData, onEmptyData}) {
     this.chart.on('plotly_selected', (eventData) => {
       console.log('on selected', eventData)
-      if (eventData) {
-        const selectedPoints = eventData.points;
-        // Do something with the selected points
-        const normalized_instruction = []
-        const normalized_output = []
-        const instructions_idxs = []
-        const output_idxs = []
-        selectedPoints.map(sp => {
+      if (!eventData) {
+        this.resetTraces()
+        onEmptyData()
+        return
+      }
+      if (onSelectionStart) onSelectionStart()
+
+      const selectedPoints = eventData.points;
+      // Do something with the selected points
+      const normalized_instruction = []
+      const normalized_output = []
+      const instructions_idxs = []
+      const output_idxs = []
+      const lineCreation = []
+      selectedPoints.map(sp => {
+        const [
+          input,
+          output,
+        ] = this.pointToNormalizedData(sp)
+        if(this.settings.enableTracing) {
           if(sp.data.name === this.#INSTRUCTION_NAME) {
-            this.addLine(
+            const linePromise = this.addLine(
               [sp.x, this.output_x[sp.pointIndex]],
               [sp.y, this.output_y[sp.pointIndex]]
             )
-            normalized_instruction.push({
-              instruction_x: sp.x,
-              instruction_y: sp.y,
-              input: this.data[sp.pointIndex].input,
-              instruction_word_count: this.data[sp.pointIndex].instruction_word_count,
-              instruction_avg_word_len: this.data[sp.pointIndex].instruction_avg_word_len,
-            })
-            instructions_idxs.push(sp.pointIndex)
+            lineCreation.push(linePromise)
           } else {
-            // console.log("CEK 2", sp.x, sp.pointIndex, instruction_x[sp.pointIndex])
-            this.addLine(
+            const linePromise = this.addLine(
               [sp.x, this.instruction_x[sp.pointIndex]],
               [sp.y, this.instruction_y[sp.pointIndex]]
             )
-            normalized_output.push({
-              output_x: sp.x,
-              output_y: sp.y,
-              output: this.data[sp.pointIndex].input,
-              output_word_count: this.data[sp.pointIndex].output_word_count,
-              output_avg_word_len: this.data[sp.pointIndex].output_avg_word_len,
-            })
-            output_idxs.push(sp.pointIndex)
+            lineCreation.push(linePromise)
           }
-        })
+        }
 
-        onEventData(instructions_idxs, normalized_instruction, output_idxs, normalized_output)
-      } else {
-        this.resetTraces()
-        onEmptyData()
-      }
+        normalized_instruction.push(input)
+        instructions_idxs.push(sp.pointIndex)
+        normalized_output.push(output)
+        output_idxs.push(sp.pointIndex)
+      })
+      Promise.all(lineCreation)
+      .then(() => {
+        onEventData(normalized_instruction, instructions_idxs, normalized_output, output_idxs)
+      })
     })
+  }
+
+  /**
+   * Gives point index and normalized data so that it's ready for use in table UI
+   * @param {*} point 
+   * TODO: combine pointIndex so that we don't need two object
+   */
+  pointToNormalizedData(point) {
+    console.log("data", this.data[point.pointIndex])
+    const normalized_input = {
+      instruction_x: this.data[point.pointIndex].instruction_x,
+      instruction_y: this.data[point.pointIndex].instruction_y,
+      input: this.data[point.pointIndex].input,
+      instruction_word_count: this.data[point.pointIndex].instruction_word_count,
+      instruction_avg_word_len: this.data[point.pointIndex].instruction_avg_word_len,
+      idx: point.pointIndex,
+    }
+    const normalized_output = {
+      output_x: this.data[point.pointIndex].output_x,
+      output_y: this.data[point.pointIndex].output_y,
+      output: this.data[point.pointIndex].output,
+      output_word_count: this.data[point.pointIndex].output_word_count,
+      output_avg_word_len: this.data[point.pointIndex].output_avg_word_len,
+      idx: point.pointIndex,
+    }
+    return [normalized_input, normalized_output]
   }
   
   /**

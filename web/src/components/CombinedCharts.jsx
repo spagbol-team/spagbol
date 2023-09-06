@@ -11,34 +11,69 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useChartData } from '@/context/chart'
-import PlotInitializer from '../utils/PlotInitializer'
+import PlotInitializer from '@/utils/PlotInitializer'
+import { useSettings } from '@/context/settings'
 
 
 export function Scatter({}) {
   // var data_template = [trace1, trace3];
   const [onPreview, setOnPreview] = useState(new Set())
+
+  /**
+   * TODO:
+   * - Combine instructionPointsIdx and outputPointsIdx to shownInstructionData and shownOutputData
+   */
   const [instructionPointsIdx, setInstructionPointsIdx] = useState([])
   const [outputPointsIdx, setOutputPointsIdx] = useState([])
+  const [loading, setLoading] = useState('')
   const {
     data,
     setData,
-    shownInstructionData,
+    searchedData,
     setShownInstructionData,
-    shownOutputData,
     setShownOutputData,
     isTextSearching,
   } = useChartData()
+  const {
+    tracing,
+  } = useSettings()
   const previewRef = useRef()
   previewRef.current = onPreview
+  const plotRef = useRef(null)
+
+  useEffect(() => {
+    if(plotRef.current) plotRef.current.setEnableTracing(tracing)
+  }, [tracing])
 
   async function initPlotClass() {
-    const inputSrc = shownInstructionData && isTextSearching ? shownInstructionData: data
-    const outputSrc = shownOutputData && isTextSearching ? shownOutputData: data
-    const plot1 = new PlotInitializer(data, inputSrc, outputSrc)
+    const inputSrc = isTextSearching ? searchedData: data
+    // const outputSrc = isTextSearching ? searchedData: data
+    const plot1 = new PlotInitializer(inputSrc)
+    // const plot1 = new PlotInitializer(data, inputSrc, outputSrc)
     await plot1.initPlot()
-    plot1.addChartOnClickEvent(setInstructionPointsIdx, setOutputPointsIdx)
+    plot1.addChartOnClickEvent((
+      normalizedInput,
+      clickedInputIdx,
+      normalizedOutput,
+      clickedOutputIdx
+    ) => {
+      // give null if no point to use view data again
+      setShownInstructionData(normalizedInput.length ? normalizedInput: null)
+      setShownOutputData(normalizedOutput.length ? normalizedOutput: null)
+      setInstructionPointsIdx(clickedInputIdx)
+      setOutputPointsIdx(clickedOutputIdx)
+    })
     plot1.addChartOnSelectedEvent({
-      onEventData: (instructions_idxs, normalized_instruction, output_idxs, normalized_output) => {
+      onSelectionStart: () => {
+        setLoading('Creating Lines')
+      },
+      onEventData: (
+        normalized_instruction,
+        instructions_idxs,
+        normalized_output,
+        output_idxs,
+      ) => {
+        setLoading('')
         const newPreview = new Set(previewRef.current)
         if(instructions_idxs.length) {
           setInstructionPointsIdx(instructions_idxs)
@@ -55,6 +90,7 @@ export function Scatter({}) {
         setOnPreview(newPreview)
       },
       onEmptyData: () => {
+        setLoading('')
         setInstructionPointsIdx([])
         setOutputPointsIdx([])
         const newPreview = new Set(previewRef.current)
@@ -65,6 +101,7 @@ export function Scatter({}) {
         setShownOutputData(null)
       }
     })
+    plotRef.current = plot1
     return plot1
   }
 
@@ -81,11 +118,11 @@ export function Scatter({}) {
   useEffect(() => {
     let chart
     if(isTextSearching) initPlotClass().then(res => chart = res)
-    // if(isTextSearching) initPlot()
+
     return () => {
       if(chart) chart.removeChartFromDOM()
     }
-  }, [shownInstructionData, shownOutputData])
+  }, [searchedData])
 
   function deletePoints() {
     const newData = [...data]
@@ -105,6 +142,7 @@ export function Scatter({}) {
     <>
       <div id="chart1" className="min-h-[85%]"></div>
       <div className="w-full flex justify-end">
+        <div>{loading}</div>
         <button
           className="px-2 py-0 bg-red-500 mx-10 z-10 disabled:bg-gray-600"
           onClick={() => deletePoints()}
