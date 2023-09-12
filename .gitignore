@@ -2,5 +2,5 @@
 __pycache__/
 tmp/
 .pytest_cache/
+*venv*/
 .DS_Store
-

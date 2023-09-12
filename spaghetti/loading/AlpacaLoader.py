@@ -17,7 +17,7 @@ import os
 from datasets import load_dataset
 import numpy as np
 
-from spaghetti.loading.DataLoader import DataLoader
+from spaghetti.loading import DataLoader
 from spaghetti.errors import InvalidSourceError
 
 

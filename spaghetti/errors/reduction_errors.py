@@ -10,12 +10,12 @@ language governing permissions and limitations under the License.
 """
 
 
-class InvalidSourceError(Exception):
+class UnfitModelError(Exception):
     """
-    Error class for Data Loaders that indicates that loading source is invalid
+    Error class for usage of transform method of DimensionalityReduction before fitting the model
     """
-    def __init__(self, cause: str):
-        self.cause = cause
+    def __init__(self, msg: str):
+        self.msg = msg
 
     def __str__(self):
-        return "Data loader source is invalid. Reason: %s" % self.cause
+        return self.msg
