@@ -12,4 +12,9 @@ stats.html
 
 .eslintcache
 
+.idea/
+__pycache__/
+tmp/
+.pytest_cache/
+*venv*/
 .DS_Store

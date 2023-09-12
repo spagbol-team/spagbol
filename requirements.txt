@@ -1,0 +1,8 @@
+pandas~=1.4.2
+validators~=0.21.2
+datasets~=2.14.4
+numpy~=1.25.2  # Picked the newer version from 'main' branch
+umap-learn~=0.5.3
+torch~=2.0.1
+transformers~=4.32.1
+scikit-learn~=1.3.0  # Both branches have the same version, so kept as is
