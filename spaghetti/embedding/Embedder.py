@@ -20,8 +20,10 @@ class Embedder(ABC):
 
     @abstractmethod
     def __init__(self):
-        self._model = self._init_model()
-        self._tokenizer = self._init_tokenizer()
+        """
+        This method should initialize the class variables.
+        """
+        pass
 
     @abstractmethod
     def _init_model(self):

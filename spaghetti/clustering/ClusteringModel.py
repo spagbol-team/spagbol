@@ -19,7 +19,10 @@ class ClusteringModel(ABC):
 
     @abstractmethod
     def __init__(self):
-        self._model = self._init_model()
+        """
+        This method should initialize the model
+        """
+        pass
 
     @abstractmethod
     def _init_model(self):
