@@ -6,9 +6,9 @@ services:
     entrypoint: /bin/sh
     ports:
       - 5173:5173
-    working_dir: /srv/app
+    working_dir: /src/app
     volumes:
       - type: bind
         source: ./
-        target: /srv/app
+        target: /src/app
     tty: true

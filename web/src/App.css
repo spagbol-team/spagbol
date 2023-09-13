@@ -5,6 +5,30 @@
   overflow-x: hidden;
 }
 
+/* Scrollbar */
+/* width */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 1px;
+}
+
+/* Track */
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Handle */
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+  transition: 'background';
+  transition-duration: 200;
+}
+
+/* Handle on hover */
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;

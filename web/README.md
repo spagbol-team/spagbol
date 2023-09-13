@@ -25,7 +25,7 @@ yarn docker-dev
 ```
 
 ## ISSUES
-
+Issues thay you may found while setting up the project
 ```
 failed to load config from /<loc>/vite.config.js
 ```

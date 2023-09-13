@@ -2,30 +2,38 @@
  * Copyright 2023 Spaghetti team
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License. You may obtain a copy of the License at
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  * http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific
+ * Unless required by applicable law or agreed to in writing,
+ * softwaredistributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
  * language governing permissions and limitations under the License.
  */
 
-import { useEffect, useRef, useState } from 'react'
-import { useChartData } from '@/context/chart'
-import PlotInitializer from '@/utils/PlotInitializer'
-import { useSettings } from '@/context/settings'
+import React, {useEffect, useRef, useState} from 'react';
+import {useChartData} from '@/context/chart';
+import PlotInitializer from '@/utils/PlotInitializer';
+import {useSettings} from '@/context/settings';
+import {deleteDataPoints} from '@/api';
 
-
+/**
+ * @component
+ * @return {JSX.Element} Header component.
+ */
 export function Scatter({}) {
   // var data_template = [trace1, trace3];
-  const [onPreview, setOnPreview] = useState(new Set())
+  const [onPreview, setOnPreview] = useState(new Set());
 
   /**
    * TODO:
-   * - Combine instructionPointsIdx and outputPointsIdx to shownInstructionData and shownOutputData
+   * - Combine instructionPointsIdx and
+   * outputPointsIdx to shownInstructionData and shownOutputData
    */
-  const [instructionPointsIdx, setInstructionPointsIdx] = useState([])
-  const [outputPointsIdx, setOutputPointsIdx] = useState([])
-  const [loading, setLoading] = useState('')
+  const [instructionPointsIdx, setInstructionPointsIdx] = useState([]);
+  const [outputPointsIdx, setOutputPointsIdx] = useState([]);
+  const [loading, setLoading] = useState('');
   const {
     data,
     setData,
@@ -33,109 +41,116 @@ export function Scatter({}) {
     setShownInstructionData,
     setShownOutputData,
     isTextSearching,
-  } = useChartData()
-  const {
-    tracing,
-  } = useSettings()
-  const previewRef = useRef()
-  previewRef.current = onPreview
-  const plotRef = useRef(null)
+  } = useChartData();
+  const {tracing} = useSettings();
+  const previewRef = useRef();
+  previewRef.current = onPreview;
+  const plotRef = useRef(null);
 
   useEffect(() => {
-    if(plotRef.current) plotRef.current.setEnableTracing(tracing)
-  }, [tracing])
+    if (plotRef.current) plotRef.current.setEnableTracing(tracing);
+  }, [tracing]);
 
+  /**
+   * Initialize the plot class.
+   * @return {Promise<PlotInitializer>} The initialized plot class.
+   */
   async function initPlotClass() {
-    const inputSrc = isTextSearching ? searchedData: data
+    const inputSrc = isTextSearching ? searchedData : data;
     // const outputSrc = isTextSearching ? searchedData: data
-    const plot1 = new PlotInitializer(inputSrc)
+    const plot1 = new PlotInitializer(inputSrc);
     // const plot1 = new PlotInitializer(data, inputSrc, outputSrc)
-    await plot1.initPlot()
-    plot1.addChartOnClickEvent((
-      normalizedInput,
-      clickedInputIdx,
-      normalizedOutput,
-      clickedOutputIdx
-    ) => {
-      // give null if no point to use view data again
-      setShownInstructionData(normalizedInput.length ? normalizedInput: null)
-      setShownOutputData(normalizedOutput.length ? normalizedOutput: null)
-      setInstructionPointsIdx(clickedInputIdx)
-      setOutputPointsIdx(clickedOutputIdx)
-    })
+    await plot1.initPlot();
+    plot1.addChartOnClickEvent(
+        (
+            normalizedInput,
+            clickedInputIdx,
+            normalizedOutput,
+            clickedOutputIdx,
+        ) => {
+        // give null if no point to use view data again
+          setShownInstructionData(
+          normalizedInput.length ? normalizedInput : null,
+          );
+          setShownOutputData(normalizedOutput.length ? normalizedOutput : null);
+          setInstructionPointsIdx(clickedInputIdx);
+          setOutputPointsIdx(clickedOutputIdx);
+        },
+    );
     plot1.addChartOnSelectedEvent({
       onSelectionStart: () => {
-        setLoading('Creating Lines')
+        setLoading('Creating Lines');
       },
       onEventData: (
-        normalized_instruction,
-        instructions_idxs,
-        normalized_output,
-        output_idxs,
+          normalizedInstruction,
+          instructionsIdxs,
+          normalizedOutput,
+          outputIdxs,
       ) => {
-        setLoading('')
-        const newPreview = new Set(previewRef.current)
-        if(instructions_idxs.length) {
-          setInstructionPointsIdx(instructions_idxs)
-          setShownInstructionData(normalized_instruction)
-          newPreview.add('instruction')
+        setLoading('');
+        const newPreview = new Set(previewRef.current);
+        if (instructionsIdxs.length) {
+          setInstructionPointsIdx(instructionsIdxs);
+          setShownInstructionData(normalizedInstruction);
+          newPreview.add('instruction');
         }
-        if(output_idxs.length) {
-          setOutputPointsIdx(output_idxs)
-          setShownOutputData(normalized_output)
-          newPreview.add('output')
+        if (outputIdxs.length) {
+          setOutputPointsIdx(outputIdxs);
+          setShownOutputData(normalizedOutput);
+          newPreview.add('output');
           // newPreview += ';output'
         }
         // create lines on selected points
-        setOnPreview(newPreview)
+        setOnPreview(newPreview);
       },
       onEmptyData: () => {
-        setLoading('')
-        setInstructionPointsIdx([])
-        setOutputPointsIdx([])
-        const newPreview = new Set(previewRef.current)
-        newPreview.delete('instruction')
-        newPreview.delete('output')
-        setOnPreview(newPreview)
-        setShownInstructionData(null)
-        setShownOutputData(null)
-      }
-    })
-    plotRef.current = plot1
-    return plot1
+        setLoading('');
+        setInstructionPointsIdx([]);
+        setOutputPointsIdx([]);
+        const newPreview = new Set(previewRef.current);
+        newPreview.delete('instruction');
+        newPreview.delete('output');
+        setOnPreview(newPreview);
+        setShownInstructionData(null);
+        setShownOutputData(null);
+      },
+    });
+    plotRef.current = plot1;
+    return plot1;
   }
 
   useEffect(() => {
     // if(data.length) initPlot()
-    let chart
-    if(data.length) initPlotClass().then(res => chart = res)
+    let chart;
+    if (data.length) initPlotClass().then((res) => (chart = res));
 
     return () => {
-      if(chart) chart.removeChartFromDOM()
-    }
-  }, [data, isTextSearching])
+      if (chart) chart.removeChartFromDOM();
+    };
+  }, [data, isTextSearching]);
 
   useEffect(() => {
-    let chart
-    if(isTextSearching) initPlotClass().then(res => chart = res)
+    let chart;
+    if (isTextSearching) initPlotClass().then((res) => (chart = res));
 
     return () => {
-      if(chart) chart.removeChartFromDOM()
-    }
-  }, [searchedData])
+      if (chart) chart.removeChartFromDOM();
+    };
+  }, [searchedData]);
 
+  /**
+   * Delete the selected data points.
+   */
   function deletePoints() {
-    const newData = [...data]
-    const toBeRemoved = [...outputPointsIdx, ...instructionPointsIdx]
-
-    toBeRemoved.map(ipi => {
-      newData.splice(ipi, 1)
-    })
-    setData(newData)
-    setShownOutputData(null)
-    setOutputPointsIdx([])
-    setInstructionPointsIdx([])
-    setShownInstructionData(null)
+    const toBeRemoved = [...outputPointsIdx, ...instructionPointsIdx];
+    /** might want to refetch clustering */
+    deleteDataPoints(toBeRemoved, data).then((newData) => {
+      setData(newData);
+      setShownOutputData(null);
+      setOutputPointsIdx([]);
+      setInstructionPointsIdx([]);
+      setShownInstructionData(null);
+    });
   }
 
   return (
@@ -148,9 +163,9 @@ export function Scatter({}) {
           onClick={() => deletePoints()}
           disabled={!outputPointsIdx.length && !instructionPointsIdx.length}
         >
-          Delete Points 
+          Delete Points
         </button>
       </div>
     </>
-  )
+  );
 }

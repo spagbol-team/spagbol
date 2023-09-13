@@ -1,9 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
@@ -24,7 +21,7 @@ export default {
         },
         'color': {
           DEFAULT: 'rgb(139, 140, 152)',
-          'color2': 'rgb(153, 155, 182)',
+          color2: 'rgb(153, 155, 182)',
         },
         'highlight-text-color': {
           DEFAULT: 'rgb(255, 87, 34)',
@@ -45,5 +42,4 @@ export default {
     },
   },
   plugins: [],
-}
-
+};
