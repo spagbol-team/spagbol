@@ -1,6 +1,6 @@
 import numpy as np
 
-from spaghetti.similarity import CosineSimilarity
+from spagbol.similarity import CosineSimilarity
 
 
 def test_single_similarity():

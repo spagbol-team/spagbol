@@ -13,8 +13,10 @@ from transformers import AutoTokenizer, AutoModel
 import torch
 import torch.nn.functional as F
 import numpy as np
+from typing import List
 
-from spaghetti.embedding.Embedder import Embedder
+from spagbol.embedding.Embedder import Embedder
+
 
 class AllMiniLMEmbedder(Embedder):
     """
@@ -24,7 +26,10 @@ class AllMiniLMEmbedder(Embedder):
 
     def __init__(self):
         try:
-            self._model = self._init_model()
+            self.device = "cpu"
+            if torch.cuda.is_available():
+                self._device = "cuda"
+            self._model = self._init_model().to(self._device)
             self._tokenizer = self._init_tokenizer()
         except Exception as e:
             print(f"Error initializing model or tokenizer: {e}")
@@ -57,7 +62,7 @@ class AllMiniLMEmbedder(Embedder):
         """
         try:
             # Tokenize the input data
-            inputs = self._tokenizer(data, return_tensors='pt', truncation=True, padding=True)
+            inputs = self._tokenizer(data, return_tensors='pt', truncation=True, padding=True).to(self._device)
 
             # Get the model's output
             model_output = self._model(**inputs)
@@ -65,12 +70,14 @@ class AllMiniLMEmbedder(Embedder):
             # Perform mean pooling on the model's output to generate sentence embeddings
             embeddings = self._mean_pooling(model_output, inputs['attention_mask'])
 
+            embeddings = F.normalize(embeddings, p=2, dim=1)
+
             return embeddings.detach().numpy()
         except Exception as e:
             print(f"Error embedding data: {e}")
             return None
 
-    def embed_batch(self, data: list[str]) -> np.array:
+    def embed_batch(self, data: List[str]) -> np.array:
         """
         This method should embed the input data in batches
         :param data: Input data to be embedded
@@ -78,13 +85,15 @@ class AllMiniLMEmbedder(Embedder):
         """
         try:
             # Tokenize the input data
-            inputs = self._tokenizer(data, return_tensors='pt', truncation=True, padding=True)
+            inputs = self._tokenizer(data, return_tensors='pt', truncation=True, padding=True).to(self._device)
 
             # Get the model's output
-            model_output = self._model(**inputs)
+            model_output = self._model(**inputs).cpu()
 
             # Perform mean pooling on the model's output to generate sentence embeddings
             embeddings = self._mean_pooling(model_output, inputs['attention_mask'])
+
+            embeddings = F.normalize(embeddings, p=2, dim=1)
 
             return embeddings.detach().numpy()
         except Exception as e:
@@ -109,4 +118,3 @@ class AllMiniLMEmbedder(Embedder):
         except Exception as e:
             print(f"Error during mean pooling: {e}")
             return None
-

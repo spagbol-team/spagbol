@@ -13,8 +13,8 @@ import numpy as np
 from sklearn.decomposition import PCA
 from typing import Iterable
 
-from spaghetti.reduction import DimensionalityReduction
-from spaghetti.errors import UnfitModelError
+from spagbol.reduction import DimensionalityReduction
+from spagbol.errors import UnfitModelError
 
 
 class PcaReduction(DimensionalityReduction):

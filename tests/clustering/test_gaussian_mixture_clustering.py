@@ -10,7 +10,7 @@ language governing permissions and limitations under the License.
 """
 import unittest
 import numpy as np
-from spaghetti.clustering.GaussianMixtureClustering import GaussianMixtureClustering
+from spagbol.clustering.GaussianMixtureClustering import GaussianMixtureClustering
 
 # you can run this test using the following command line call
 # python -m unittest tests.clustering.test_gaussian_mixture_clustering

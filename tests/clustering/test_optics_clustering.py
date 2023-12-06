@@ -10,7 +10,7 @@ language governing permissions and limitations under the License.
 """
 import unittest
 import numpy as np
-from spaghetti.clustering.OpticsClustering import OpticsClustering
+from spagbol.clustering.OpticsClustering import OpticsClustering
 
 # you can run this test using the following command line call
 # python -m unittest tests.clustering.test_optics_clustering

@@ -13,7 +13,7 @@ from datasets import load_dataset
 import os
 import numpy as np
 
-from spaghetti.loading.AlpacaLoader import AlpacaLoader
+from spagbol.loading.AlpacaLoader import AlpacaLoader
 
 
 def _load_temp_alpaca():

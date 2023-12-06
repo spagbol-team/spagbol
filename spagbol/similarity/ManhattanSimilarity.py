@@ -12,7 +12,7 @@ language governing permissions and limitations under the License.
 import numpy as np
 from typing import Iterable, List
 
-from spaghetti.similarity import SimilarityMeasure
+from spagbol.similarity import SimilarityMeasure
 
 
 class ManhattanSimilarity(SimilarityMeasure):

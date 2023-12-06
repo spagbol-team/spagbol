@@ -13,7 +13,7 @@ from typing import Iterable, List
 import numpy as np
 from numpy.linalg import norm
 
-from spaghetti.similarity import SimilarityMeasure
+from spagbol.similarity import SimilarityMeasure
 
 
 class CosineSimilarity(SimilarityMeasure):

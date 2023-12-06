@@ -11,6 +11,7 @@ language governing permissions and limitations under the License.
 from abc import ABC, abstractmethod
 import numpy as np
 
+
 class ClusteringModel(ABC):
     """
     This is the interface for all clustering techniques used in this project.

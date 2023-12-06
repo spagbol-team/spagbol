@@ -10,7 +10,9 @@ language governing permissions and limitations under the License.
 """
 import numpy as np
 from sklearn.cluster import OPTICS
-from spaghetti.clustering.ClusteringModel import ClusteringModel
+
+from spagbol.clustering.ClusteringModel import ClusteringModel
+
 
 class OpticsClustering(ClusteringModel):
     """

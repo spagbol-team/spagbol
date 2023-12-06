@@ -1,5 +1,5 @@
 """
-Copyright 2023 Spaghetti team
+Copyright 2023 Spagbol team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy of the License at
@@ -17,8 +17,8 @@ import os
 from datasets import load_dataset
 import numpy as np
 
-from spaghetti.loading import DataLoader
-from spaghetti.errors import InvalidSourceError
+from spagbol.loading import DataLoader
+from spagbol.errors import InvalidSourceError
 
 
 class AlpacaLoader(DataLoader):

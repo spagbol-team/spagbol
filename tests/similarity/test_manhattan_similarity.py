@@ -1,6 +1,6 @@
 import numpy as np
 
-from spaghetti.similarity import ManhattanSimilarity
+from spagbol.similarity import ManhattanSimilarity
 
 
 def test_single_similarity():

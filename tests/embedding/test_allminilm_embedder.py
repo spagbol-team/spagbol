@@ -11,7 +11,7 @@ language governing permissions and limitations under the License.
 import unittest
 import torch
 import numpy as np
-from spaghetti.embedding.AllMiniLMEmbedder import AllMiniLMEmbedder
+from spagbol.embedding.AllMiniLMEmbedder import AllMiniLMEmbedder
 
 # you can run this test using the following command line call
 # python -m unittest tests.embedding.test_allminilm_embedder

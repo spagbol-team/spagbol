@@ -13,8 +13,8 @@ from typing import Iterable
 import umap
 import numpy as np
 
-from spaghetti.reduction import DimensionalityReduction
-from spaghetti.errors import UnfitModelError
+from spagbol.reduction import DimensionalityReduction
+from spagbol.errors import UnfitModelError
 
 
 class UmapReduction(DimensionalityReduction):

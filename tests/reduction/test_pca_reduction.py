@@ -1,7 +1,7 @@
 import numpy as np
 
-from spaghetti.reduction import PcaReduction
-from spaghetti.errors import UnfitModelError
+from spagbol.reduction import PcaReduction
+from spagbol.errors import UnfitModelError
 
 
 def test_fit_transform():
