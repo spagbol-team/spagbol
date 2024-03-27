@@ -19,6 +19,7 @@
 import { SearchInput } from '@/components/Input'
 import { useChartData } from '@/context/chart'
 import { useSettings } from '@/context/settings'
+import { postData } from '../apiService'
 
 export function Header() {
   const {
@@ -35,16 +36,17 @@ export function Header() {
 
   function findWords(text) {
     if (text) {
-      let filtered = data.filter(dt => dt.instruction.includes(text) || dt.input.includes(text) || dt.output.includes(text))
-      setSearchedData([...filtered])
-      setShownInstructionData(filtered)
-      setShownOutputData(filtered)
-      setIsTextSearching(true)
+      postData({ searchQuery: text }).then(filteredData => {
+        setSearchedData([...filteredData]);
+        setShownInstructionData(filteredData);
+        setShownOutputData(filteredData);
+        setIsTextSearching(true);
+      });
     } else {
-      setSearchedData(null)
-      setShownInstructionData(null)
-      setShownOutputData(null)
-      setIsTextSearching(false)
+      setSearchedData(null);
+      setShownInstructionData(null);
+      setShownOutputData(null);
+      setIsTextSearching(false);
     }
   }
 

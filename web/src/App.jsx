@@ -55,22 +55,18 @@ function HomePage() {
   }
 
   useEffect(() => {
-    getData()
-    .then(res => {
-      let max_y_answer = 0
-      const OFFSET = max_y_answer * 4 || 300
-      res.map((rs,idx) => {
-        if (max_y_answer < rs.output_y) max_y_answer = rs.output_y
-        /** idx needed for deleting point as it will become only object and not array*/
-        rs.idx = idx
-      })
-      res.map(rs => {
-        rs.instruction_y = rs.instruction_y + OFFSET
-      })
-      setData(res)
-    })
-    .catch(err => alert(err))
-  }, [])
+    const getData = async () => {
+      try {
+        const fetchedData = await fetchData('endpoint-name'); // Replace 'endpoint-name' with your actual endpoint
+        // Process fetchedData as needed before setting state
+        setData(fetchedData);
+      } catch (error) {
+        alert('Failed to fetch data');
+      }
+    };
+  
+    getData();
+  }, [setData]);
 
   function previewInstructionData(partialData) {
     setShownInstructionData(partialData)

@@ -17,6 +17,7 @@
 
 import { useChartData } from "@/context/chart"
 import { useEffect, useState } from "react"
+import { deleteData } from '../apiService'
 
 function THeader({ children }) {
   return (
@@ -90,19 +91,24 @@ export function Table({
     setShowMenuIdx((prevValue) => idx !== prevValue ? idx: null)
   }
 
-  function deletePoint(deletePoint, tableIdx) {
-    const idx = deletePoint.idx
-    const newData = [...originalData]
-
-    newData.splice(idx, 1)
-    setData(newData)
-
-    const newPartial = [...partialData]
-    newPartial.splice(tableIdx, 1)
-    if (data.length > page * SHOWN_DATA) {
-      newPartial.push(data[(page * SHOWN_DATA) - 1])
-    }
-    setData(newData)
+  function deletePoint(dataPoint, tableIdx) {
+    deleteData(dataPoint.idx).then(() => {
+      // Assuming deleteData function handles the deletion on the server
+      // Now, update the local state to reflect the change
+      const updatedData = [...originalData];
+      updatedData.splice(dataPoint.idx, 1); // Remove the item from the original data array
+      setData(updatedData); // Update the state with the new data array
+  
+      const updatedPartialData = [...partialData];
+      updatedPartialData.splice(tableIdx, 1); // Remove the item from the current page's data array
+      if (data.length > page * SHOWN_DATA) {
+        updatedPartialData.push(data[(page * SHOWN_DATA) - 1]); // Add the next item to the current page's data array, if available
+      }
+      setPartialData(updatedPartialData); // Update the state with the new page's data array
+    }).catch(error => {
+      // Handle error
+      console.error('Error deleting data point:', error);
+    });
   }
 
   return (
