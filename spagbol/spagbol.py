@@ -14,6 +14,7 @@ from spagbol.loading import DataLoader
 from spagbol.reduction import DimensionalityReduction
 from spagbol.similarity import SimilarityMeasure
 from spagbol.errors import NoDatasetError, ClusteringError
+from spagbol.loading import AlpacaLoader
 
 import pandas as pd
 from typing import Dict, Any
@@ -33,13 +34,11 @@ class Spagbol:
         self.dataset = None
 
     @inject
-    def load_data(self, client: WeaviateClient, embedding_batch_size=200):
-        # Load data -> run embeddings on input and output, store them as self.dataset["input_embedding"] and
-        # self.dataset["output_embedding"], apply reduction on those two, store reduced coordinates as
-        # self.dataset["reduced_input_x"], self.dataset["reduced_input_y"], self.dataset["reduced_output_x"],
-        # self.dataset["reduced_output_y"]. Either add ids to rows here or add it in the DataLoader,
-        # should be stored in the "id" column
-        pass
+    def load_data(self, dataset_location: str):
+        # Create an instance of AlpacaLoader with the dataset location
+        data_loader = AlpacaLoader(dataset_location)
+        # Load the data into memory
+        self.dataset = data_loader.load_data()
 
     def find_similarities(self):
         pass

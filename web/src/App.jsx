@@ -16,7 +16,7 @@
  */
 
 import './App.css'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Scatter } from '@/components/CombinedCharts'
 // import { Scatter } from '@/components/Charts'
 import { Table } from '@/components/Table'
@@ -24,6 +24,8 @@ import { SearchInput } from '@/components/Input'
 import { ChartDataProvider, useChartData } from '@/context/chart'
 import { SettingsProvider } from './context/settings'
 import { Header } from '@/components/Header'
+import { LoadData } from '@/components/LoadData';
+import { fetchData } from './apiService'; 
 
 function App() {
   return (
@@ -39,6 +41,7 @@ const INSTRUCTION_KEY = ['input', 'instruction_word_count', 'instruction_avg_wor
 const ANSWER_KEY = ['output', 'output_word_count', 'output_avg_word_len', 'output_x', 'output_y']
 
 function HomePage() {
+  const [dataLoaded, setDataLoaded] = useState(false);
   const {
     data,
     setData,
@@ -48,16 +51,21 @@ function HomePage() {
     setShownOutputData,
   } = useChartData()
 
-  async function getData() {
-    const data = await fetch('/subset_data.json')
-    const json = await data.json()
-    return json
+  //async function getData() {
+  //  const data = await fetch('/subset_data.json')
+  //  const json = await data.json()
+  //  return json
+  //}
+
+  // Conditional rendering based on whether the data is loaded
+  if (!dataLoaded) {
+    return <LoadData onLoaded={() => setDataLoaded(true)} />;
   }
 
   useEffect(() => {
     const getData = async () => {
       try {
-        const fetchedData = await fetchData('endpoint-name'); // Replace 'endpoint-name' with your actual endpoint
+        const fetchedData = await fetchData('get_data_points');
         // Process fetchedData as needed before setting state
         setData(fetchedData);
       } catch (error) {
@@ -66,7 +74,7 @@ function HomePage() {
     };
   
     getData();
-  }, [setData]);
+  }, []);
 
   function previewInstructionData(partialData) {
     setShownInstructionData(partialData)

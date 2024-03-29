@@ -43,11 +43,10 @@ def load_data(spagbol_instance: Spagbol):
     # Parse request content as JSON
     content = request.json
     try:
-        # Extract required parameters from the request
-        client = content['client']
-        batch_size = content.get('batch_size', 200)  # Default batch size is 200 if not specified
+        # Extract the dataset location from the request
+        dataset_location = content['location']
         # Load data using the Spagbol instance
-        spagbol_instance.load_data(client, batch_size)
+        spagbol_instance.load_data(dataset_location)
         # Return success message
         return jsonify({"message": "Data loaded successfully"}), 200
     except KeyError as e:

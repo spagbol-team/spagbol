@@ -21,9 +21,9 @@ export const fetchData = async (endpoint) => {
     }
     // Parse and return the response body as JSON
     return await response.json();
-  } catch (error) {
-    // Log the error to the console
+    } catch (error) {
     console.error('Fetch error:', error);
+    throw error; // Rethrow the error after logging
   }
 };
 
@@ -32,10 +32,10 @@ export const fetchData = async (endpoint) => {
  * @param {Object} data - The data to be sent to the endpoint.
  * @returns {Promise<Object>} The result of the POST operation.
  */
-export const postData = async (data) => {
+export const postData = async (endpoint, data) => {
   try {
     // Perform a POST request with the provided data
-    const response = await fetch(`${API_BASE_URL}/your-endpoint`, {
+    const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

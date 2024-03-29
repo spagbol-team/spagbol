@@ -69,3 +69,17 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.dataset-input {
+  color: black;
+  background-color: white;
+  /* Add additional styling as needed */
+}
+
+/* Assuming the form is the direct container of the input */
+form {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh; /* Use full viewport height to center vertically */
+}
