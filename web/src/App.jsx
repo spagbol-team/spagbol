@@ -57,24 +57,28 @@ function HomePage() {
   //  return json
   //}
 
+  // Define the getData function
+  const getData = async () => {
+    try {
+      const fetchedData = await fetchData('get_data_points');
+      setData(fetchedData);
+    } catch (error) {
+      alert('Failed to fetch data from get_data_points');
+    }
+  };
+
+  // useEffect hook for other logic if needed
+  useEffect(() => {
+    // Any other logic that needs to run on component mount
+  }, []);
+
   // Conditional rendering based on whether the data is loaded
   if (!dataLoaded) {
-    return <LoadData onLoaded={() => setDataLoaded(true)} />;
+    return <LoadData onLoaded={() => {
+      setDataLoaded(true);
+      getData(); // Call getData after setting dataLoaded to true
+    }} />;
   }
-
-  useEffect(() => {
-    const getData = async () => {
-      try {
-        const fetchedData = await fetchData('get_data_points');
-        // Process fetchedData as needed before setting state
-        setData(fetchedData);
-      } catch (error) {
-        alert('Failed to fetch data');
-      }
-    };
-  
-    getData();
-  }, []);
 
   function previewInstructionData(partialData) {
     setShownInstructionData(partialData)

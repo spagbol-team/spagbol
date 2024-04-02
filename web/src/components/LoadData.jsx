@@ -7,11 +7,17 @@ export const LoadData = ({ onLoaded }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      const response = await postData('/load_data', { location: datasetLocation });
+      const response = await postData('load_data', { location: datasetLocation });
+      console.log('Response from load_data:', response); 
       if (response.message === 'Data loaded successfully') {
+        console.log('Data loaded successfully, calling onLoaded'); 
         onLoaded();
+      } else {
+        console.log('Data load unsuccessful:', response.message); 
+        alert('Failed to load data: ' + response.message);
       }
     } catch (error) {
+      console.error('Error during data load:', error); 
       alert('Failed to load data');
     }
   };

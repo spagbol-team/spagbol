@@ -25,7 +25,7 @@ class AllMiniLMEmbedder(Embedder):
 
     def __init__(self):
         try:
-            self.device = "cpu"
+            self._device = "cpu"
             if torch.cuda.is_available():
                 self._device = "cuda"
             self._model = self._init_model().to(self._device)

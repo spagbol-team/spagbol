@@ -16,6 +16,8 @@ import os
 from datasets import load_dataset
 import numpy as np
 
+import logging
+
 from spagbol.loading import DataLoader
 from spagbol.errors import InvalidSourceError
 
@@ -51,6 +53,7 @@ class AlpacaLoader(DataLoader):
         :raises InvalidSourceError:
         """
         if is_valid_url(self.source):
+            logging.debug("loading from json")
             try:
                 if ".json" in self.source:
                     dataset = pd.read_json(self.source)
@@ -63,6 +66,7 @@ class AlpacaLoader(DataLoader):
                     "Couldn't reach this source URL, it may have a protected access or is inactive."
                 )
         elif os.path.exists(self.source):
+            logging.debug("os path exists")
             try:
                 if ".json" in self.source:
                     dataset = pd.read_json(self.source)
@@ -75,6 +79,7 @@ class AlpacaLoader(DataLoader):
                     "Encountered UnicodeDecode error while parsing the file. Maybe it has a wrong format."
                 )
         else:
+            logging.debug("attempting huggingface dataset download")
             try:
                 dataset_split = "train"
                 if split is not None:

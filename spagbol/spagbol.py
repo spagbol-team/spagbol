@@ -25,6 +25,7 @@ import weaviate.classes as wvc
 
 class Spagbol:
 
+    #@inject
     def __init__(self, data_loader: DataLoader, embedder: Embedder, clustering_model: ClusteringModel,
                  reducer: DimensionalityReduction):
         self.data_loader = data_loader
@@ -33,12 +34,13 @@ class Spagbol:
         self.reducer = reducer
         self.dataset = None
 
-    @inject
-    def load_data(self, dataset_location: str):
+    def load_data(self, dataset_location: str) -> str:
         # Create an instance of AlpacaLoader with the dataset location
         data_loader = AlpacaLoader(dataset_location)
         # Load the data into memory
         self.dataset = data_loader.load_data()
+
+        print(self.dataset)
 
     def find_similarities(self):
         pass

@@ -11,7 +11,11 @@ You should have received a copy of the GNU Affero General Public License along w
 # Import necessary modules from Flask and dependency injection libraries
 from flask import Flask, request, jsonify
 from flask_injector import FlaskInjector
-from injector import inject, singleton
+from injector import inject, singleton, Module, provider
+from flask_cors import CORS
+
+import logging
+
 
 # Import Spagbol system components
 from spagbol.spagbol import Spagbol
@@ -20,35 +24,97 @@ from spagbol.embedding import Embedder, AllMiniLMEmbedder
 from spagbol.clustering import ClusteringModel, GaussianMixtureClustering
 from spagbol.reduction import DimensionalityReduction, PcaReduction
 
-# Initialize Flask application
+# intialising logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Initialise Flask application
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}}, supports_credentials=True)
+
 
 # Configure dependency injection for the application
 def configure(binder):
+    print("Configuring Flask-Injector")
+
     # Bind interfaces to concrete implementations with singleton scope
     binder.bind(DataLoader, to=AlpacaLoader, scope=singleton)
     binder.bind(Embedder, to=AllMiniLMEmbedder, scope=singleton)
     binder.bind(ClusteringModel, to=GaussianMixtureClustering, scope=singleton)
     binder.bind(DimensionalityReduction, to=PcaReduction, scope=singleton)
     # Bind Spagbol class to itself so the injector creates the instance
+    logging.debug("Configuring bindings for dependency injection")
     binder.bind(Spagbol, to=Spagbol, scope=singleton)
+    logging.debug("Spagbol class bound to binder")
+
+
+class AppModule(Module):
+    def __init__(self, source=None):
+        self.source = source
+
+    @singleton
+    @provider
+    def provide_data_loader(self) -> DataLoader:
+        return AlpacaLoader(source=self.source)
+
+    @singleton
+    @provider
+    def provide_embedder(self) -> Embedder:
+        return AllMiniLMEmbedder()
+
+    @singleton
+    @provider
+    def provide_clustering_model(self) -> ClusteringModel:
+        return GaussianMixtureClustering()
+
+    @singleton
+    @provider
+    def provide_reducer(self) -> DimensionalityReduction:
+        return PcaReduction()
+
+    @singleton
+    @provider
+    def provide_spagbol(self, data_loader: DataLoader, embedder: Embedder,
+                        clustering_model: ClusteringModel, reducer: DimensionalityReduction) -> Spagbol:
+        return Spagbol(data_loader, embedder, clustering_model, reducer)
+
 
 # Apply the dependency injection configuration to the Flask app
-FlaskInjector(app=app, modules=[configure])
+FlaskInjector(app=app, modules=[AppModule()])
 
 # Define route for loading data into the system
 @app.route('/load_data', methods=['POST'])
-@inject
-def load_data(spagbol_instance: Spagbol):
-    # Parse request content as JSON
+#@inject
+#def load_data(spagbol_instance: Spagbol):
+def load_data():
+    logging.debug("Entered load_data endpoint")
+
     content = request.json
+    dataset_location = content['location']
+    app_module = AppModule(source=dataset_location)
+    injector = FlaskInjector(app=app, modules=[app_module]).injector
+    spagbol_instance = injector.get(Spagbol)
+
+    # Parse request content as JSON
+    #content = request.json
     try:
+        logging.debug(f"Request content: {content}")
         # Extract the dataset location from the request
         dataset_location = content['location']
+        logging.debug(f"Dataset location: {dataset_location}")
+
+        # Manually create an instance of Spagbol and its dependencies
+        #data_loader = AlpacaLoader(dataset_location)
+        #embedder = AllMiniLMEmbedder()
+        #clustering_model = GaussianMixtureClustering()
+        #reducer = PcaReduction()
+        #spagbol_instance = Spagbol(data_loader, embedder, clustering_model, reducer)
+
         # Load data using the Spagbol instance
         spagbol_instance.load_data(dataset_location)
+        success_message = "Data loaded successfully"
+        logging.debug(success_message)
         # Return success message
-        return jsonify({"message": "Data loaded successfully"}), 200
+        return jsonify({"message": success_message}), 200
     except KeyError as e:
         # Return error message for missing request keys
         return jsonify({"error": f"Missing key in request: {str(e)}"}), 400
@@ -219,4 +285,5 @@ def import_data(spagbol_instance: Spagbol):
 
 # Start the Flask application if this script is the main program
 if __name__ == '__main__':
-    app.run(debug=True)
+    #app.run(debug=True)
+    app.run(host='0.0.0.0', debug=True)

@@ -23,7 +23,7 @@ from flask import Flask
 app = Flask(__name__)
 FlaskInjector(app=app, modules=[configure])
 
-data_loader = AlpacaLoader("tatsu-lab/alpaca")
+data_loader = AlpacaLoader()
 reducer = PcaReduction()
 embedder = AllMiniLMEmbedder()
 clustering = GaussianMixtureClustering()
