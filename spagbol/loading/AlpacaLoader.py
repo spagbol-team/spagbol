@@ -71,10 +71,16 @@ class AlpacaLoader(DataLoader):
                 if ".json" in self.source:
                     dataset = pd.read_json(self.source)
                 else:
+                    logging.debug("reading a csv")
+                    logging.debug(f'csv file location is, {self.source}')
+
                     dataset = pd.read_csv(self.source)
+                
             except ParserError:
+                logging.debug("Couldn't parse file from path or URL. Maybe it has a wrong format.")
                 raise InvalidSourceError("Couldn't parse file from path or URL. Maybe it has a wrong format.")
             except UnicodeDecodeError:
+                logging.debug("Encountered UnicodeDecode error while parsing the file. Maybe it has a wrong format.")
                 raise InvalidSourceError(
                     "Encountered UnicodeDecode error while parsing the file. Maybe it has a wrong format."
                 )
@@ -100,9 +106,20 @@ class AlpacaLoader(DataLoader):
         :param dataset: Raw Alpaca dataset
         :return: Converted dataset
         """
+
+        logging.debug("converting dataset")
+        print(dataset)
+
         output_dataset = pd.DataFrame()
         dataset["input"] = dataset["input"].replace(np.nan, "")
+        dataset["instruction"] = dataset["instruction"].replace(np.nan, "")
         output_dataset["input"] = dataset["instruction"] + " " + dataset["input"]
         output_dataset["input"] = output_dataset["input"].apply(lambda x: x.strip())
         output_dataset["output"] = dataset["output"]
+
+        #print(output_dataset)
+
+        logging.debug("dataset converted")
+
         return output_dataset
+    

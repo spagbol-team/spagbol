@@ -42,6 +42,18 @@ class Spagbol:
 
         print(self.dataset)
 
+    def create_embeddings(self):
+        if self.dataset is None:
+            raise NoDatasetError("You need to load the dataset before creating embeddings")
+
+        # Embed the input data
+        input_embeddings = self.embedder.embed_batch(self.dataset['input'].tolist())
+        self.dataset['input_embedding'] = input_embeddings
+
+        # Embed the output data
+        output_embeddings = self.embedder.embed_batch(self.dataset['output'].tolist())
+        self.dataset['output_embedding'] = output_embeddings
+
     def find_similarities(self):
         pass
 
