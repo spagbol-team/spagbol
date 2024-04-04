@@ -108,18 +108,13 @@ class AlpacaLoader(DataLoader):
         """
 
         logging.debug("converting dataset")
-        print(dataset)
-
-        output_dataset = pd.DataFrame()
-        dataset["input"] = dataset["input"].replace(np.nan, "")
-        dataset["instruction"] = dataset["instruction"].replace(np.nan, "")
-        output_dataset["input"] = dataset["instruction"] + " " + dataset["input"]
-        output_dataset["input"] = output_dataset["input"].apply(lambda x: x.strip())
-        output_dataset["output"] = dataset["output"]
-
-        #print(output_dataset)
+        # Combine 'instruction' and 'input' columns, handling NaN values and stripping whitespace
+        dataset["input"] = dataset["instruction"].fillna('') + " " + dataset["input"].fillna('')
+        dataset["input"] = dataset["input"].apply(lambda x: x.strip())
+        # Assuming 'output' column does not require modification, so it's not explicitly mentioned here
 
         logging.debug("dataset converted")
 
-        return output_dataset
+        # Return the modified dataset with only the 'input' and 'output' columns if needed
+        return dataset[['input', 'output']]
     
