@@ -8,6 +8,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
+import logging
 from spagbol.loading import DataLoader, AlpacaLoader
 from spagbol.embedding import Embedder, AllMiniLMEmbedder
 from spagbol.clustering import ClusteringModel, GaussianMixtureClustering
@@ -21,3 +22,6 @@ class SpagbolController:
     def load_and_prepare_data(self, dataset_location):
         self.spagbol.load_data(dataset_location)
         self.spagbol.create_embeddings()
+
+        logging.debug("embeddings created successfully.")
+        

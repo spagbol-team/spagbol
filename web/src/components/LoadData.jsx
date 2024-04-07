@@ -9,7 +9,7 @@ export const LoadData = ({ onLoaded }) => {
     try {
       const response = await postData('load_data', { location: datasetLocation });
       console.log('Response from load_data:', response); 
-      if (response.message === 'Data loaded successfully') {
+      if (response.message === 'Data loaded and embeddings created successfully') {
         console.log('Data loaded successfully, calling onLoaded'); 
         onLoaded();
       } else {
