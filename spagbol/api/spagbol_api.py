@@ -68,7 +68,15 @@ def load_data():
         
         success_message = "Data loaded and embeddings created successfully"
         logging.debug(success_message)
-        return jsonify({"message": success_message}), 200
+
+        try:
+            data_json = spagbol_instance.to_json()
+            logging.debug("converting to json")
+        except Exception as e:
+            logging.error(f"Error converting to JSON: {e}")
+            return jsonify({"error": "Failed to convert data to JSON"}), 500
+
+        return jsonify({"message": success_message, "data": data_json}), 200
     except KeyError as e:
         return jsonify({"error": f"Missing key in request: {str(e)}"}), 400
     except Exception as e:

@@ -74,9 +74,9 @@ function HomePage() {
 
   // Conditional rendering based on whether the data is loaded
   if (!dataLoaded) {
-    return <LoadData onLoaded={() => {
+    return <LoadData onLoaded={(loadedData) => {
       setDataLoaded(true);
-      getData(); // Call getData after setting dataLoaded to true
+      setData(loadedData); // Use the loaded data directly
     }} />;
   }
 

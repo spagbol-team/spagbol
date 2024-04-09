@@ -11,7 +11,7 @@ export const LoadData = ({ onLoaded }) => {
       console.log('Response from load_data:', response); 
       if (response.message === 'Data loaded and embeddings created successfully') {
         console.log('Data loaded successfully, calling onLoaded'); 
-        onLoaded();
+        onLoaded(response.data);
       } else {
         console.log('Data load unsuccessful:', response.message); 
         alert('Failed to load data: ' + response.message);

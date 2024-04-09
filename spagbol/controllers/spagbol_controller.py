@@ -22,6 +22,7 @@ class SpagbolController:
     def load_and_prepare_data(self, dataset_location):
         self.spagbol.load_data(dataset_location)
         self.spagbol.create_embeddings()
-
         logging.debug("embeddings created successfully.")
-        
+
+        self.spagbol.reduce_dimensions()
+        logging.debug("Data loaded, embeddings created, and dimensionality reduced successfully.")
