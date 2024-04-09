@@ -75,14 +75,19 @@ function HomePage() {
   // Conditional rendering based on whether the data is loaded
   if (!dataLoaded) {
     return <LoadData onLoaded={(loadedData) => {
+
+      loadedData = JSON.parse(loadedData);
+      
       let max_y_answer = 0;
       // Assuming loadedData.data is the array you need to manipulate
-      loadedData.data.forEach(item => {
-        console.log(loadedData);
+      console.log(typeof loadedData);
+
+      loadedData.forEach(item => {
+        
         if (max_y_answer < item.output_y) max_y_answer = item.output_y;
       });
       const OFFSET = max_y_answer * 4 || 300;
-      const adjustedData = loadedData.data.map((item, idx) => ({
+      const adjustedData = loadedData.map((item, idx) => ({
         ...item,
         idx,
         instruction_y: item.instruction_y + OFFSET

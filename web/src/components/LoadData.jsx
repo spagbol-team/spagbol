@@ -6,21 +6,21 @@ export const LoadData = ({ onLoaded }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    try {
+   //try {
       const response = await postData('load_data', { location: datasetLocation });
       console.log('Response from load_data:', response); 
       if (response.message === 'Data loaded and embeddings created successfully') {
         console.log('Data loaded successfully, calling onLoaded');
-        console.log('Loaded data:', response.data); 
+        //    console.log('Loaded data:', response.data);   
         onLoaded(response.data);
       } else {
         console.log('Data load unsuccessful:', response.message); 
         alert('Failed to load data: ' + response.message);
       }
-    } catch (error) {
-      console.error('Error during data load:', error); 
-      alert('Failed to load data');
-    }
+   // } catch (error) {
+      //console.error('Error during data load:', error); 
+     // alert('Failed to load data');
+   // }
   };
 
   return (
