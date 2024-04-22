@@ -1,5 +1,5 @@
 """
-Copyright 2023 Spaghetti team
+Copyright 2024 Spaghetti team
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -23,7 +23,7 @@ from flask import Flask
 app = Flask(__name__)
 FlaskInjector(app=app, modules=[configure])
 
-data_loader = AlpacaLoader("tatsu-lab/alpaca")
+data_loader = AlpacaLoader()
 reducer = PcaReduction()
 embedder = AllMiniLMEmbedder()
 clustering = GaussianMixtureClustering()

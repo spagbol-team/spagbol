@@ -12,10 +12,14 @@ from transformers import AutoTokenizer, AutoModel
 import torch
 import torch.nn.functional as F
 import numpy as np
+
+from tqdm import tqdm
+
 from typing import List
 
 from spagbol.embedding.Embedder import Embedder
 
+import logging
 
 class AllMiniLMEmbedder(Embedder):
     """
@@ -25,7 +29,7 @@ class AllMiniLMEmbedder(Embedder):
 
     def __init__(self):
         try:
-            self.device = "cpu"
+            self._device = "cpu"
             if torch.cuda.is_available():
                 self._device = "cuda"
             self._model = self._init_model().to(self._device)
@@ -78,26 +82,35 @@ class AllMiniLMEmbedder(Embedder):
 
     def embed_batch(self, data: List[str]) -> np.array:
         """
-        This method should embed the input data in batches
-        :param data: Input data to be embedded
-        :return: Embedded data
+        Embeds the input data in batches with a progress bar.
+        
+        This method processes each sentence in the input data individually, 
+        applies the embedding model, and returns the embeddings as a numpy array.
+        A progress bar from tqdm is displayed to monitor the embedding process.
+        
+        :param data: List of input sentences to be embedded.
+        :return: A numpy array of sentence embeddings.
         """
-        try:
-            # Tokenize the input data
-            inputs = self._tokenizer(data, return_tensors='pt', truncation=True, padding=True).to(self._device)
-
-            # Get the model's output
-            model_output = self._model(**inputs).cpu()
-
-            # Perform mean pooling on the model's output to generate sentence embeddings
-            embeddings = self._mean_pooling(model_output, inputs['attention_mask'])
-
-            embeddings = F.normalize(embeddings, p=2, dim=1)
-
-            return embeddings.detach().numpy()
-        except Exception as e:
-            print(f"Error embedding batch data: {e}")
-            return None
+        embeddings_list = []
+        # Process each sentence individually and update the progress bar
+        for sentence in tqdm(data, desc="Embedding sentences"):
+            try:
+                # Tokenize the input sentence
+                inputs = self._tokenizer([sentence], return_tensors='pt', truncation=True, padding=True).to(self._device)
+                # Get the model's output
+                model_output = self._model(**inputs).last_hidden_state.cpu()
+                # Perform mean pooling on the model's output to generate sentence embeddings
+                embeddings = self._mean_pooling(model_output, inputs['attention_mask'])
+                # Normalize the embeddings
+                normalized_embeddings = F.normalize(embeddings, p=2, dim=1)
+                # Append the embeddings to the list
+                embeddings_list.append(normalized_embeddings.detach().numpy())
+            except Exception as e:
+                logging.debug(f"Error embedding sentence: {e}")
+                print(f"Error embedding sentence: {e}")
+                # Optionally, append None or handle the error differently
+        # Concatenate all sentence embeddings into a single numpy array
+        return np.concatenate(embeddings_list, axis=0)
 
     def _mean_pooling(self, model_output: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         """
@@ -109,11 +122,11 @@ class AllMiniLMEmbedder(Embedder):
         :return: The sentence embeddings.
         """
         try:
-            token_embeddings = model_output[0]
-            input_mask_expanded = attention_mask.unsqueeze(-1)
-            input_mask_expanded = input_mask_expanded.expand(token_embeddings.size()).float()
+            token_embeddings = model_output  # Assuming model_output is already the last_hidden_state tensor
+            input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
             sum_embeddings = torch.sum(token_embeddings * input_mask_expanded, 1)
-            return sum_embeddings / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+            sum_mask = torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+            return sum_embeddings / sum_mask
         except Exception as e:
             print(f"Error during mean pooling: {e}")
             return None

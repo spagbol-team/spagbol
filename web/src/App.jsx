@@ -16,7 +16,7 @@
  */
 
 import './App.css'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Scatter } from '@/components/CombinedCharts'
 // import { Scatter } from '@/components/Charts'
 import { Table } from '@/components/Table'
@@ -24,6 +24,8 @@ import { SearchInput } from '@/components/Input'
 import { ChartDataProvider, useChartData } from '@/context/chart'
 import { SettingsProvider } from './context/settings'
 import { Header } from '@/components/Header'
+import { LoadData } from '@/components/LoadData';
+import { fetchData } from './apiService'; 
 
 function App() {
   return (
@@ -39,6 +41,7 @@ const INSTRUCTION_KEY = ['input', 'instruction_word_count', 'instruction_avg_wor
 const ANSWER_KEY = ['output', 'output_word_count', 'output_avg_word_len', 'output_x', 'output_y']
 
 function HomePage() {
+  const [dataLoaded, setDataLoaded] = useState(false);
   const {
     data,
     setData,
@@ -48,29 +51,51 @@ function HomePage() {
     setShownOutputData,
   } = useChartData()
 
-  async function getData() {
-    const data = await fetch('/subset_data.json')
-    const json = await data.json()
-    return json
-  }
+  //async function getData() {
+  //  const data = await fetch('/subset_data.json')
+  //  const json = await data.json()
+  //  return json
+  //}
 
+  // Define the getData function
+  const getData = async () => {
+    try {
+      const fetchedData = await fetchData('get_data_points');
+      setData(fetchedData);
+    } catch (error) {
+      alert('Failed to fetch data from get_data_points');
+    }
+  };
+
+  // useEffect hook for other logic if needed
   useEffect(() => {
-    getData()
-    .then(res => {
-      let max_y_answer = 0
-      const OFFSET = max_y_answer * 4 || 300
-      res.map((rs,idx) => {
-        if (max_y_answer < rs.output_y) max_y_answer = rs.output_y
-        /** idx needed for deleting point as it will become only object and not array*/
-        rs.idx = idx
-      })
-      res.map(rs => {
-        rs.instruction_y = rs.instruction_y + OFFSET
-      })
-      setData(res)
-    })
-    .catch(err => alert(err))
-  }, [])
+    // Any other logic that needs to run on component mount
+  }, []);
+
+  // Conditional rendering based on whether the data is loaded
+  if (!dataLoaded) {
+    return <LoadData onLoaded={(loadedData) => {
+
+      loadedData = JSON.parse(loadedData);
+      
+      let max_y_answer = 0;
+      // Assuming loadedData.data is the array you need to manipulate
+      console.log(typeof loadedData);
+
+      loadedData.forEach(item => {
+        
+        if (max_y_answer < item.output_y) max_y_answer = item.output_y;
+      });
+      const OFFSET = max_y_answer * 4 || 300;
+      const adjustedData = loadedData.map((item, idx) => ({
+        ...item,
+        idx,
+        instruction_y: item.instruction_y + OFFSET
+      }));
+      setDataLoaded(true);
+      setData(adjustedData);
+    }} />;
+  }
 
   function previewInstructionData(partialData) {
     setShownInstructionData(partialData)

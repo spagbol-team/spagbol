@@ -16,6 +16,8 @@ import os
 from datasets import load_dataset
 import numpy as np
 
+import logging
+
 from spagbol.loading import DataLoader
 from spagbol.errors import InvalidSourceError
 
@@ -51,6 +53,7 @@ class AlpacaLoader(DataLoader):
         :raises InvalidSourceError:
         """
         if is_valid_url(self.source):
+            logging.debug("loading from json")
             try:
                 if ".json" in self.source:
                     dataset = pd.read_json(self.source)
@@ -63,18 +66,26 @@ class AlpacaLoader(DataLoader):
                     "Couldn't reach this source URL, it may have a protected access or is inactive."
                 )
         elif os.path.exists(self.source):
+            logging.debug("os path exists")
             try:
                 if ".json" in self.source:
                     dataset = pd.read_json(self.source)
                 else:
+                    logging.debug("reading a csv")
+                    logging.debug(f'csv file location is, {self.source}')
+
                     dataset = pd.read_csv(self.source)
+                
             except ParserError:
+                logging.debug("Couldn't parse file from path or URL. Maybe it has a wrong format.")
                 raise InvalidSourceError("Couldn't parse file from path or URL. Maybe it has a wrong format.")
             except UnicodeDecodeError:
+                logging.debug("Encountered UnicodeDecode error while parsing the file. Maybe it has a wrong format.")
                 raise InvalidSourceError(
                     "Encountered UnicodeDecode error while parsing the file. Maybe it has a wrong format."
                 )
         else:
+            logging.debug("attempting huggingface dataset download")
             try:
                 dataset_split = "train"
                 if split is not None:
@@ -95,9 +106,15 @@ class AlpacaLoader(DataLoader):
         :param dataset: Raw Alpaca dataset
         :return: Converted dataset
         """
-        output_dataset = pd.DataFrame()
-        dataset["input"] = dataset["input"].replace(np.nan, "")
-        output_dataset["input"] = dataset["instruction"] + " " + dataset["input"]
-        output_dataset["input"] = output_dataset["input"].apply(lambda x: x.strip())
-        output_dataset["output"] = dataset["output"]
-        return output_dataset
+
+        logging.debug("converting dataset")
+        # Combine 'instruction' and 'input' columns, handling NaN values and stripping whitespace
+        dataset["input"] = dataset["instruction"].fillna('') + " " + dataset["input"].fillna('')
+        dataset["input"] = dataset["input"].apply(lambda x: x.strip())
+        # Assuming 'output' column does not require modification, so it's not explicitly mentioned here
+
+        logging.debug("dataset converted")
+
+        # Return the modified dataset with only the 'input' and 'output' columns if needed
+        return dataset[['input', 'output']]
+    
