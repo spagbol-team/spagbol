@@ -17,7 +17,7 @@
 
 import { useChartData } from "@/context/chart"
 import { useEffect, useState } from "react"
-import { deleteData } from '../apiService'
+import { deleteData } from '../api/apiService'
 
 function THeader({ children }) {
   return (

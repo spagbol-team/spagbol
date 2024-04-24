@@ -16,10 +16,10 @@
  */
 
 // import { Scatter } from '@/components/Charts'
-import { SearchInput } from '@/components/Input'
+import { SearchInput } from '@/components/SearchInput'
 import { useChartData } from '@/context/chart'
 import { useSettings } from '@/context/settings'
-import { postData } from '../apiService'
+import { postData } from '../api/apiService'
 
 export function Header() {
   const {

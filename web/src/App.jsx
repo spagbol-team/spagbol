@@ -20,12 +20,12 @@ import { useEffect, useState } from 'react'
 import { Scatter } from '@/components/CombinedCharts'
 // import { Scatter } from '@/components/Charts'
 import { Table } from '@/components/Table'
-import { SearchInput } from '@/components/Input'
+import { SearchInput } from '@/components/SearchInput'
 import { ChartDataProvider, useChartData } from '@/context/chart'
 import { SettingsProvider } from './context/settings'
 import { Header } from '@/components/Header'
 import { LoadData } from '@/components/LoadData';
-import { fetchData } from './apiService'; 
+import { fetchData } from './api/apiService'; 
 
 function App() {
   return (
