@@ -18,6 +18,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Plotly from 'plotly.js-dist-min'
 import { useChartData } from '@/context/chart'
+import Button from './Button';
 
 /**
  * THIS COMPONENT IS NOT USED ANYMORE MAYBE TEMPORARY
@@ -108,6 +109,7 @@ export function Scatter({}) {
 
     const inputSrc = shownInstructionData && isTextSearching ? shownInstructionData: data
     inputSrc.map(rs => {
+      console.log('cek res', rs)
       instruction_x.push(rs.instruction_x)
       instruction_y.push(rs.instruction_y)
       text_insturction.push(`input: ${rs.input}\nword count: ${rs.instruction_word_count}\navg word len: ${rs.instruction_avg_word_len}`)
@@ -271,23 +273,23 @@ export function Scatter({}) {
     <>
       <div id="chart1"></div>
       <div className="w-full flex justify-end">
-        <button
-          className="px-2 py-0 bg-red-500 mx-10 z-10 disabled:bg-gray-600"
+        <Button
+          className="bg-red-500 disabled:bg-gray-600"
           onClick={() => deletePoints('instruction')}
           disabled={!onPreview.includes('instruction')}
         >
           Delete Points 
-        </button>
+        </Button>
       </div>
       <div id="chart2"></div>
       <div className="w-full flex justify-end">
-        <button
-          className="px-2 py-0 bg-red-500 mx-10 z-10 disabled:bg-gray-600" 
+        <Button
+          className="bg-red-500 disabled:bg-gray-600" 
           onClick={() => deletePoints('output')}
           disabled={!onPreview.includes('answer')}
         >
           Delete Points 
-        </button>
+        </Button>
       </div>
     </>
   )

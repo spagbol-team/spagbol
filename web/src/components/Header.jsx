@@ -20,10 +20,13 @@ import { SearchInput } from '@/components/SearchInput'
 import { useChartData } from '@/context/chart'
 import { useSettings } from '@/context/settings'
 import { postData } from '../api/apiService'
+import Button from './Button'
+import { saveToLocalStorage } from '@/utils/localStorage'
 
 export function Header() {
   const {
     data,
+    setData,
     setSearchedData,
     setShownInstructionData,
     setShownOutputData,
@@ -36,18 +39,28 @@ export function Header() {
 
   function findWords(text) {
     if (text) {
-      postData({ searchQuery: text }).then(filteredData => {
+      postData('find_similarities', { searchQuery: text }).then(filteredData => {
         setSearchedData([...filteredData]);
         setShownInstructionData(filteredData);
         setShownOutputData(filteredData);
         setIsTextSearching(true);
       });
     } else {
-      setSearchedData(null);
-      setShownInstructionData(null);
-      setShownOutputData(null);
-      setIsTextSearching(false);
+      resetDataState();
     }
+  }
+
+  function resetDataState() {
+    setSearchedData(null);
+    setShownInstructionData(null);
+    setShownOutputData(null);
+    setIsTextSearching(false);
+  }
+
+  function onLoadAnotherData() {
+    resetDataState();
+    setData(null);
+    saveToLocalStorage('data', null);
   }
 
   return (
@@ -56,18 +69,23 @@ export function Header() {
       <div className="flex justify-center">
         <SearchInput onFind={findWords}/>
       </div>
-      <div className="bg-secondary-bg-color items-center text-sm p-2 border-slate-600 hover:border-gray-400 border rounded-lg w-36 ml-4">
-        <label htmlFor="disableTracing" className="flex items-center">
-          <input
-            id="disableTracing"
-            type="checkbox"
-            className="mr-2"
-            onChange={(e) => setTracing(e.target.checked)}
-            checked={tracing}
-          />
-          
-          Enable tracing
-        </label>
+      <div className="flex gap-2">
+        <div>
+          <Button onClick={onLoadAnotherData}>Load another data</Button>
+        </div>
+        <div className="bg-secondary-bg-color items-center text-sm p-2 border-slate-600 hover:border-gray-400 border rounded-lg w-36 ml-4">
+          <label htmlFor="disableTracing" className="flex items-center">
+            <input
+              id="disableTracing"
+              type="checkbox"
+              className="mr-2"
+              onChange={(e) => setTracing(e.target.checked)}
+              checked={tracing}
+            />
+            
+            Enable tracing
+          </label>
+        </div>
       </div>
     </div>
   )
