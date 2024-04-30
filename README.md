@@ -5,7 +5,7 @@
   <img src="spagbol_low_res.png" alt="logo" width="280"  height="auto" />
   <br/>
 
-  <h3><b>Spagbol: Spaghetti - Large Language Model Dataset Editor</b></h3>
+  <h3><b>Spaghetti - Large Language Model Dataset Editor by Spagbol</b></h3>
 
 Summoning the Spaghetti monster one question-answer pair at a time.
 
