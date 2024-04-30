@@ -1,39 +1,46 @@
 import React, { useState } from 'react';
-import { postData } from '../apiService';
+import { postData } from '@/api/apiService';
+import { Input } from './Input';
+import { extractFormValues } from '@/utils/form';
+import clsx from 'clsx';
 
 export const LoadData = ({ onLoaded }) => {
-  const [datasetLocation, setDatasetLocation] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-   //try {
-      const response = await postData('load_data', { location: datasetLocation });
-      console.log('Response from load_data:', response); 
-      if (response.message === 'Data loaded and embeddings created successfully') {
-        console.log('Data loaded successfully, calling onLoaded');
-        //    console.log('Loaded data:', response.data);   
-        onLoaded(response.data);
-      } else {
-        console.log('Data load unsuccessful:', response.message); 
-        alert('Failed to load data: ' + response.message);
-      }
-   // } catch (error) {
-      //console.error('Error during data load:', error); 
-     // alert('Failed to load data');
-   // }
+    setLoading(true);
+    const formData = extractFormValues(event);
+    const location = formData.filePath;
+    try {
+        alert('Hang tight while we load your data...')
+        const response = await postData('load_data', { location });
+        if (response.message === 'Data loaded and embeddings created successfully') {
+          onLoaded(response.data);
+        } else {
+          console.log('Data load unsuccessful:', response.message); 
+          alert('Failed to load data: ' + response.message);
+        }
+    } catch (error) {
+        console.error('Error during data load:', error); 
+        alert('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        value={datasetLocation}
-        onChange={(e) => setDatasetLocation(e.target.value)}
-        placeholder="Enter dataset location"
-        required
-        className="dataset-input"
-      />
-      <button type="submit" style={{ backgroundColor: 'RoyalBlue', color: 'white' }}>Load Data</button>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex gap-4">
+        <Input id="filePath" placeholder="Insert file path, should be absolute path" disabled={loading}></Input>
+        <button type="submit" className={clsx("bg-blue-500 text-white px-4 rounded-lg", { 'bg-slate-500': loading })} disabled={loading}>Load Data</button>
+      </div>
+      {loading && (
+        <div className="relative flex items-center justify-center">
+          <p className="text-blue-500 font-semibold mr-2">Loading...</p>
+          <div className="animate-spin h-5 w-5 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
+        </div>
+      )}
     </form>
   );
 };

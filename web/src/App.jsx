@@ -20,12 +20,13 @@ import { useEffect, useState } from 'react'
 import { Scatter } from '@/components/CombinedCharts'
 // import { Scatter } from '@/components/Charts'
 import { Table } from '@/components/Table'
-import { SearchInput } from '@/components/Input'
+import { SearchInput } from '@/components/SearchInput'
 import { ChartDataProvider, useChartData } from '@/context/chart'
 import { SettingsProvider } from './context/settings'
 import { Header } from '@/components/Header'
 import { LoadData } from '@/components/LoadData';
-import { fetchData } from './apiService'; 
+import { fetchData } from './api/apiService'; 
+import { getFromLocalStorage, saveToLocalStorage } from './utils/localStorage'
 
 function App() {
   return (
@@ -41,7 +42,6 @@ const INSTRUCTION_KEY = ['input', 'instruction_word_count', 'instruction_avg_wor
 const ANSWER_KEY = ['output', 'output_word_count', 'output_avg_word_len', 'output_x', 'output_y']
 
 function HomePage() {
-  const [dataLoaded, setDataLoaded] = useState(false);
   const {
     data,
     setData,
@@ -51,51 +51,14 @@ function HomePage() {
     setShownOutputData,
   } = useChartData()
 
-  //async function getData() {
-  //  const data = await fetch('/subset_data.json')
-  //  const json = await data.json()
-  //  return json
-  //}
-
-  // Define the getData function
-  const getData = async () => {
-    try {
-      const fetchedData = await fetchData('get_data_points');
-      setData(fetchedData);
-    } catch (error) {
-      alert('Failed to fetch data from get_data_points');
-    }
-  };
-
   // useEffect hook for other logic if needed
   useEffect(() => {
-    // Any other logic that needs to run on component mount
+    const data = getFromLocalStorage('data')
+    if (data) {
+      setData(JSON.parse(data));
+      alert('Data loaded from local storage');
+    }
   }, []);
-
-  // Conditional rendering based on whether the data is loaded
-  if (!dataLoaded) {
-    return <LoadData onLoaded={(loadedData) => {
-
-      loadedData = JSON.parse(loadedData);
-      
-      let max_y_answer = 0;
-      // Assuming loadedData.data is the array you need to manipulate
-      console.log(typeof loadedData);
-
-      loadedData.forEach(item => {
-        
-        if (max_y_answer < item.output_y) max_y_answer = item.output_y;
-      });
-      const OFFSET = max_y_answer * 4 || 300;
-      const adjustedData = loadedData.map((item, idx) => ({
-        ...item,
-        idx,
-        instruction_y: item.instruction_y + OFFSET
-      }));
-      setDataLoaded(true);
-      setData(adjustedData);
-    }} />;
-  }
 
   function previewInstructionData(partialData) {
     setShownInstructionData(partialData)
@@ -109,13 +72,34 @@ function HomePage() {
     console.log("data", idx)
   }
 
+  function onLoaded(loadedData) {
+    loadedData = JSON.parse(loadedData);
+    
+    let max_y_answer = 0;
+    // Assuming loadedData.data is the array you need to manipulate
+    console.log(typeof loadedData);
+
+    loadedData.forEach(item => {
+      
+      if (max_y_answer < item.output_y) max_y_answer = item.output_y;
+    });
+    const OFFSET = max_y_answer * 4 || 300;
+    const adjustedData = loadedData.map((item, idx) => ({
+      ...item,
+      idx,
+      instruction_y: item.instruction_y + OFFSET
+    }));
+    setData(adjustedData);
+    saveToLocalStorage('data', JSON.stringify(adjustedData));
+  }
+
+  // Conditional rendering based on whether the data is loaded
+  if (!data) {
+    return <LoadData onLoaded={onLoaded} />;
+  }
+
   return (
     <div className="flex flex-col bg-main-bg-color text-third-bg-color h-screen">
-      {/* <div className="w-screen flex justify-center py-4 border-b border-gray-600">
-        <div>
-          <SearchInput />
-        </div>
-      </div> */}
       <Header />
       <div className="flex flex-1 h-full flex-wrap md:flex-nowrap">
         <div className="flex-1">
