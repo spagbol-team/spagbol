@@ -2,12 +2,12 @@
 
 <div align="center">
   <!-- You are encouraged to replace this logo with your own! Otherwise you can also remove it. -->
-  <img src="spagbol_low_res.png" alt="logo" width="140"  height="auto" />
+  <img src="spagbol_low_res.png" alt="logo" width="280"  height="auto" />
   <br/>
 
   <h3><b>Spagbol: Spaghetti - Large Language Model Dataset Editor</b></h3>
 
-Summoning the Spaghetti monster one row at a time.
+Summoning the Spaghetti monster one question-answer pair at a time.
 
 </div>
 
