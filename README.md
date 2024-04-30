@@ -2,10 +2,12 @@
 
 <div align="center">
   <!-- You are encouraged to replace this logo with your own! Otherwise you can also remove it. -->
-  <img src="murple_logo.png" alt="logo" width="140"  height="auto" />
+  <img src="spagbol_low_res.png" alt="logo" width="140"  height="auto" />
   <br/>
 
   <h3><b>Spagbol: Spaghetti - Large Language Model Dataset Editor</b></h3>
+
+Summoning the Spaghetti monster one row at a time.
 
 </div>
 
@@ -197,7 +199,7 @@ Example:
 - Twitter: [@twitterhandle](https://twitter.com/twitterhandle)
 - LinkedIn: [LinkedIn](https://linkedin.com/in/linkedinhandle)
 
-👤 **Andrii **
+👤 **Andrii Velykorodnii**
 
 - GitHub: [@githubhandle](https://github.com/githubhandle)
 - Twitter: [@twitterhandle](https://twitter.com/twitterhandle)
