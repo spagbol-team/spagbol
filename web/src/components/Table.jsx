@@ -17,9 +17,11 @@
 
 import { useChartData } from "@/context/chart"
 import { useEffect, useState } from "react"
-import { deleteData } from '../api/apiService'
+import { addDataPoint, deleteData, editDataPoint } from '../api/apiService'
 import Button from "./Button"
 import TableFooter from "./TableFooter"
+import DataPointModalForm from "./DataPointModalForm"
+import { toast } from "react-toastify"
 
 function THeader({ children }) {
   return (
@@ -67,13 +69,17 @@ export function Table({
   data=[],
   onRemoveData
 }) {
-  const [page, setPage] = useState(1)
-  const [partialData, setPartialData] = useState([])
-  const [showMenuIdx, setShowMenuIdx] = useState()
+  const [page, setPage] = useState(1);
+  const [partialData, setPartialData] = useState([]);
+  const [showMenuIdx, setShowMenuIdx] = useState();
   const {
     data: originalData,
     setData,
-  } = useChartData()
+  } = useChartData();
+  const [loading, setLoading] = useState(false);
+  const [focusedData, setFocusedData] = useState(null);
+
+  const shouldOpenModal = !!focusedData?.type;
 
   useEffect(() => {
     const start = (page-1)*SHOWN_DATA
@@ -85,6 +91,7 @@ export function Table({
   }
 
   function deletePoint(dataPoint, tableIdx) {
+    setLoading(true);
     deleteData(dataPoint.idx).then(() => {
       // Assuming deleteData function handles the deletion on the server
       // Now, update the local state to reflect the change
@@ -98,14 +105,60 @@ export function Table({
         updatedPartialData.push(data[(page * SHOWN_DATA) - 1]); // Add the next item to the current page's data array, if available
       }
       setPartialData(updatedPartialData); // Update the state with the new page's data array
+      toast.success('Successfully delete the data point');
     }).catch(error => {
       // Handle error
       console.error('Error deleting data point:', error);
-    });
+      toast.error('Failed to delete the data point');
+    }).finally(() => setLoading(false));
   }
 
-  function onAddData() {
-    
+  function addData(dataPoint) {
+    setLoading(true);
+    addDataPoint(dataPoint).then(() => {
+      // Assuming addDataPoint function handles the addition on the server
+      const updatedData = [dataPoint, ...originalData]; // Add the new item to the beginning of the original data array
+      setData(updatedData); // Update the state with the new data array
+  
+      const updatedPartialData = [dataPoint, ...partialData]; // Add the new item to the beginning of the current page's data array
+      if (data.length > page * SHOWN_DATA) {
+        updatedPartialData.pop(); // Remove the last item from the current page's data array, if available
+      }
+      setPartialData(updatedPartialData); // Update the state with the new page's data array
+      toast.success('Successfully add the data point');
+    }).catch(error => {
+      // Handle error
+      console.error('Error deleting data point:', error);
+      toast.error('Failed to add the data point');
+    }).finally(() => setLoading(false));
+  }
+
+  function editPoint(dataPoint, tableIdx) {
+    setLoading(true);
+    editDataPoint(dataPoint).then(() => {
+      const updatedData = [...originalData]; // Create a copy of the original data array
+      updatedData.splice(tableIdx, 1, dataPoint); // Replace the data at index tableIdx with dataPoint
+      setData(updatedData);
+
+      const updatedPartialData = [...partialData]; // Create a copy of the current page's data array
+      updatedPartialData.splice(tableIdx, 1, dataPoint); // Replace the data at index tableIdx with dataPoint
+      setPartialData(updatedPartialData); // Update the state with the modified page's data array
+      toast.success('Successfully edit the data point');
+    }).catch(error => {
+      // Handle error
+      console.error('Error deleting data point:', error);
+      toast.error('Failed to edit the data point');
+    }).finally(() => setLoading(false));
+  }
+
+  // dataPointWithIndex is dataPoint & { index: number; type: 'new' | 'edit' }
+  function submitNewData(dataPointWithIndex) {
+    console.log('dataPointWithIndex', dataPointWithIndex);
+    if (dataPointWithIndex.type === 'edit') {
+      editPoint(dataPointWithIndex, dataPointWithIndex.index)
+    } else {
+      addData(dataPointWithIndex)
+    }
   }
 
   return (
@@ -141,7 +194,7 @@ export function Table({
           </Button>
 
           <Button
-            onClick={onAddData}
+            onClick={() => setFocusedData({ type: 'new' })}
             leftIcon={
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="w-5 h-5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -199,7 +252,9 @@ export function Table({
                                       showMenuIdx === idx ?
                                       <div className="absolute left-[-90px] bottom-1 bg-white text-gray-800 text-sm border border-gray-700 rounded-lg">
                                         <ul className="space-y-2 text-left">
-                                          <li className="hover:bg-gray-300 px-2 py-1 rounded-lg">Edit data</li>
+                                          <li className="hover:bg-gray-300 px-2 py-1 rounded-lg" onClick={() => setFocusedData({ ...dt, index: idx, type: 'edit' })}>
+                                            Edit data
+                                          </li>
                                           <li
                                             className="hover:bg-gray-300 px-2 py-1 rounded-lg"
                                             onClick={() => deletePoint(dt,idx)}
@@ -233,6 +288,16 @@ export function Table({
           )
         }}
         onClickPrevious={() => setPage(Math.max(0, page-1))}
+      />
+
+      <DataPointModalForm
+        showModal={shouldOpenModal}
+        data={focusedData}
+        onClose={() => setFocusedData(null)}
+        onSubmit={(data) => {
+          submitNewData(data);
+          closeModal();
+        }}
       />
     </section>
   )

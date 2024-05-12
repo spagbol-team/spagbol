@@ -3,6 +3,7 @@ import { postData } from '@/api/apiService';
 import { Input } from './Input';
 import { extractFormValues } from '@/utils/form';
 import clsx from 'clsx';
+import { toast } from 'react-toastify';
 
 export const LoadData = ({ onLoaded }) => {
   const [loading, setLoading] = useState(false);
@@ -13,17 +14,16 @@ export const LoadData = ({ onLoaded }) => {
     const formData = extractFormValues(event);
     const location = formData.filePath;
     try {
-        alert('Hang tight while we load your data...')
         const response = await postData('load_data', { location });
         if (response.message === 'Data loaded and embeddings created successfully') {
           onLoaded(response.data);
         } else {
           console.log('Data load unsuccessful:', response.message); 
-          alert('Failed to load data: ' + response.message);
+          toast.error('Failed to load data: ' + response.message);
         }
     } catch (error) {
         console.error('Error during data load:', error); 
-        alert('Failed to load data');
+        toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
