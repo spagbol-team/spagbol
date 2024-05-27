@@ -55,6 +55,60 @@ export const postData = async (endpoint, data) => {
   }
 };
 
+export const editDataPoint = async (dataPoint) => {
+  try {
+    // Perform a POST request with the provided data
+    // const response = await fetch(`${API_BASE_URL}/edit_data_point/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/edit_data_point`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: dataPoint,
+    });
+    // Check if the response status indicates a successful request
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    // Parse the response body as JSON
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    // Log any errors that occur during the post operation
+    console.error('Post error:', error);
+  }
+};
+
+
+/**
+ * Deletes a data point from the server.
+ * @param {object} dataPointId - The unique identifier of the data point to delete.
+ * @returns {Promise<Object>} A promise that resolves with the deletion result or logs an error.
+ */
+export const addDataPoint = async (dataPoint) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/add_data_point`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: dataPoint
+    });
+
+    if (!response.ok) {
+      // If not successful, throw an error with the status code
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Parse and return the server's response as JSON
+    return await response.json();
+  } catch (error) {
+    // Log any errors that occur during the deletion process
+    console.error('Delete error:', error);
+  }
+};
+
+
 /**
  * Deletes a data point from the server.
  * @param {number} dataPointId - The unique identifier of the data point to delete.

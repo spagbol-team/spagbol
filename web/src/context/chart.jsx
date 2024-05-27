@@ -23,6 +23,7 @@ const chartDataContext = createContext({});
 export function ChartDataProvider({ children }) {
   const [data, setData] = useState([])
   // searchedData used to hold temporary filtered data based on user search text input feature
+  // may need another technique as it may consume a lot of memory
   const [searchedData, setSearchedData] = useState([])
   const [shownInstructionData, setShownInstructionData] = useState(null)
   const [shownOutputData, setShownOutputData] = useState(null)

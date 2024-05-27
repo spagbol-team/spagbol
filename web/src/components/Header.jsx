@@ -22,6 +22,8 @@ import { useSettings } from '@/context/settings'
 import { postData } from '../api/apiService'
 import Button from './Button'
 import { saveToLocalStorage } from '@/utils/localStorage'
+import { throttle } from '@/utils/helper'
+import { Checkbox } from './Checkbox'
 
 export function Header() {
   const {
@@ -34,17 +36,29 @@ export function Header() {
   } = useChartData()
   const {
     tracing,
-    setTracing
+    setTracing,
+    useSimiliaritySearch,
+    setUseSimiliaritySearch
   } = useSettings()
 
   function findWords(text) {
     if (text) {
-      postData('find_similarities', { searchQuery: text }).then(filteredData => {
+      if (useSimiliaritySearch) {
+        postData('find_similarities', { searchQuery: text }).then(filteredData => {
+          setSearchedData([...filteredData]);
+          setShownInstructionData(filteredData);
+          setShownOutputData(filteredData);
+          setIsTextSearching(true);
+        });
+      } else {
+        setIsTextSearching(true);
+        const filteredData = data.filter(item => item.input.includes(text) || item.output.includes(text));
         setSearchedData([...filteredData]);
         setShownInstructionData(filteredData);
         setShownOutputData(filteredData);
         setIsTextSearching(true);
-      });
+      }
+      
     } else {
       resetDataState();
     }
@@ -65,27 +79,27 @@ export function Header() {
 
   return (
     <div className="w-screen grid grid-cols-3 justify-center py-4 border-b border-gray-600">
-      <div className=""></div>
+      <div className="">
+      </div>
       <div className="flex justify-center">
-        <SearchInput onFind={findWords}/>
+        <SearchInput onFind={throttle(findWords)}/>
       </div>
       <div className="flex gap-2">
         <div>
-          <Button onClick={onLoadAnotherData}>Load another data</Button>
+          <Button onClick={onLoadAnotherData}>Load new data</Button>
         </div>
-        <div className="bg-secondary-bg-color items-center text-sm p-2 border-slate-600 hover:border-gray-400 border rounded-lg w-36 ml-4">
-          <label htmlFor="disableTracing" className="flex items-center">
-            <input
-              id="disableTracing"
-              type="checkbox"
-              className="mr-2"
-              onChange={(e) => setTracing(e.target.checked)}
-              checked={tracing}
-            />
-            
-            Enable tracing
-          </label>
-        </div>
+        <Checkbox
+          id="similiaritySearch"
+          onChange={(e) => setUseSimiliaritySearch(e.target.checked)}
+          checked={useSimiliaritySearch}
+          label="Similiarity search"
+        />
+        <Checkbox
+          id="disableTracing"
+          onChange={(e) => setTracing(e.target.checked)}
+          checked={tracing}
+          label="Enable tracing"
+        />
       </div>
     </div>
   )

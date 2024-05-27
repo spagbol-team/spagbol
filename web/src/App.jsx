@@ -16,23 +16,25 @@
  */
 
 import './App.css'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Scatter } from '@/components/CombinedCharts'
 // import { Scatter } from '@/components/Charts'
 import { Table } from '@/components/Table'
-import { SearchInput } from '@/components/SearchInput'
 import { ChartDataProvider, useChartData } from '@/context/chart'
 import { SettingsProvider } from './context/settings'
 import { Header } from '@/components/Header'
 import { LoadData } from '@/components/LoadData';
-import { fetchData } from './api/apiService'; 
 import { getFromLocalStorage, saveToLocalStorage } from './utils/localStorage'
+
+import 'react-toastify/dist/ReactToastify.css';
+import { toast, ToastContainer } from 'react-toastify'
 
 function App() {
   return (
     <SettingsProvider>
       <ChartDataProvider>
         <HomePage />
+        <ToastContainer />
       </ChartDataProvider>
     </SettingsProvider>
   )
@@ -56,7 +58,7 @@ function HomePage() {
     const data = getFromLocalStorage('data')
     if (data) {
       setData(JSON.parse(data));
-      alert('Data loaded from local storage');
+      toast('Data loaded from local storage');
     }
   }, []);
 
