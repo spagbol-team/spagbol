@@ -12,7 +12,8 @@ import logging
 from spagbol.clustering import ClusteringModel
 from spagbol.embedding import Embedder
 from spagbol.loading import DataLoader
-from spagbol.reduction import DimensionalityReduction
+from spagbol.reduction import DimensionalityReduction, IncrementalPcaReduction
+from spagbol.partitioning import PartitionManager
 from spagbol.similarity import SimilarityMeasure
 from spagbol.errors import NoDatasetError, ClusteringError
 from spagbol.loading import AlpacaLoader
@@ -29,12 +30,14 @@ class Spagbol:
 
     #@inject
     def __init__(self, data_loader: DataLoader, embedder: Embedder, clustering_model: ClusteringModel,
-                 reducer: DimensionalityReduction):
+                 reducer: IncrementalPcaReduction):
         self.data_loader = data_loader
         self.embedder = embedder
         self.clustering_model = clustering_model
         self.reducer = reducer
         self.dataset = None
+        self.input_partition_manager = PartitionManager("/home/razaare/test_input_partition_dir", 1000)
+        self.output_partition_manager = PartitionManager("/home/razaare/test_output_partition_dir", 1000)
 
     def load_data(self, dataset_location: str) -> str:
         # Create an instance of AlpacaLoader with the dataset location
@@ -44,30 +47,40 @@ class Spagbol:
 
         print(self.dataset)
 
+    def _partition_embed_data(self, data, pm, id_prefix: str = "", batch_size: int = 100):
+        batch = []
+        ids = []
+
+        for i, line in enumerate(data):
+            batch.append(str(line))
+            ids.append(id_prefix + str(i))
+            if len(batch) >= batch_size:
+                embedded_batch = self.embedder.embed_batch(batch)
+                result = {}
+                for j in range(0, len(batch)):
+                    result[ids[j]] = embedded_batch[j].tolist()
+                pm.add_data(result)
+                batch = []
+                ids = []
+        if len(batch) >= 0:
+            embedded_batch = self.embedder.embed_batch(batch)
+            result = {}
+            for j in range(0, len(batch)):
+                result[ids[j]] = embedded_batch[j].tolist()
+            pm.add_data(result)
+
     def create_embeddings(self):
         if self.dataset is None:
             raise NoDatasetError("You need to load the dataset before creating embeddings")
         
         # Convert 'input' and 'output' columns to lists of strings, precasting non-string items
-        input_data = [str(item) for item in self.dataset['input'].tolist() if item is not None]
-        output_data = [str(item) for item in self.dataset['output'].tolist() if item is not None]
+        if self.input_partition_manager.current_partition is None:
+            input_data = [str(item) for item in self.dataset['input'].tolist() if item is not None]
+            self._partition_embed_data(input_data, pm=self.input_partition_manager)
 
-
-        try:
-            # Embed the input data
-            input_embeddings = self.embedder.embed_batch(input_data)
-            self.dataset['input_embedding'] = list(input_embeddings)
-        except Exception as e:
-            logging.debug(f"failed to create input embeddings: {e}")
-            raise Exception(f"Failed to create input embeddings: {e}")
-
-        try:
-            # Embed the output data
-            output_embeddings = self.embedder.embed_batch(output_data)
-            self.dataset['output_embedding'] = list(output_embeddings)
-        except Exception as e:
-            logging.debug(f"failed to create output embeddings: {e}")
-            raise Exception(f"Failed to create output embeddings: {e}")
+        if self.output_partition_manager.current_partition is None:
+            output_data = [str(item) for item in self.dataset['output'].tolist() if item is not None]
+            self._partition_embed_data(output_data, pm=self.output_partition_manager)
 
         print(self.dataset)
 
@@ -76,22 +89,15 @@ class Spagbol:
             raise NoDatasetError("You need to load and prepare the dataset before reducing dimensions")
 
         # Assuming 'input_embedding' and 'output_embedding' are the columns you want to reduce
-        input_embeddings = self.dataset['input_embedding']
-        output_embeddings = self.dataset['output_embedding']
-
-        try:
-            # Reduce dimensions for input embeddings
-            reduced_input_embeddings = self.reducer.fit_transform(input_embeddings)
-            # Extracting x and y coordinates
-            self.dataset['instruction_x'] = reduced_input_embeddings[:, 0]  # Extract x coordinates
-            self.dataset['instruction_y'] = reduced_input_embeddings[:, 1]  # Extract y coordinates
-        except Exception as e:
-            logging.debug(f"Failed to reduce dimensions for input embeddings: {e}")
+        # Reduce dimensions for input embeddings
+        reduced_input_embeddings = self.reducer.fit_transform(self.input_partition_manager, "input")
+        # Extracting x and y coordinates
+        self.dataset['instruction_x'] = reduced_input_embeddings[:, 0]  # Extract x coordinates
+        self.dataset['instruction_y'] = reduced_input_embeddings[:, 1]  # Extract y coordinates
 
         try:
             # Reduce dimensions for output embeddings
-            reduced_output_embeddings = self.reducer.fit_transform(output_embeddings)
-            #self.dataset['reduced_output_embedding'] = reduced_output_embeddings.tolist()
+            reduced_output_embeddings = self.reducer.fit_transform(self.output_partition_manager, "output")
             self.dataset['output_x'] = reduced_output_embeddings[:, 0]  # Extract x coordinates
             self.dataset['output_y'] = reduced_output_embeddings[:, 1]  # Extract y coordinates
 

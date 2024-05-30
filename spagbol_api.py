@@ -13,7 +13,7 @@ from flask import Flask, request, jsonify
 from flask_injector import FlaskInjector, inject
 from injector import inject, singleton, Module, provider
 from flask_cors import CORS
-from .modules import AppModule
+from spagbol.api.modules import AppModule
 
 import logging
 from spagbol.controllers.spagbol_controller import SpagbolController  # Import the SpagbolController
@@ -35,64 +35,64 @@ def configure(binder):
     binder.bind(DataLoader, to=AlpacaLoader, scope=singleton)
     binder.bind(Embedder, to=AllMiniLMEmbedder, scope=singleton)
     binder.bind(ClusteringModel, to=GaussianMixtureClustering, scope=singleton)
-    binder.bind(DimensionalityReduction, to=PcaReduction, scope=singleton)
+    binder.bind(DimensionalityReduction, to=IncrementalPcaReduction, scope=singleton)
     # Bind Spagbol class to itself so the injector creates the instance
     logging.debug("Configuring bindings for dependency injection")
     binder.bind(Spagbol, to=Spagbol, scope=singleton)
     logging.debug("Spagbol class bound to binder")
 
 
-
 # Apply the dependency injection configuration to the Flask app
-#FlaskInjector(app=app, modules=[AppModule()])
+# FlaskInjector(app=app, modules=[AppModule()])
 
 @app.route('/load_data', methods=['POST'])
 def load_data():
     logging.debug("Entered load_data endpoint")
 
     content = request.json
+
+    dataset_location = content['location']
+    logging.debug(f"Request content: {content}")
+    logging.debug(f"Dataset location: {dataset_location}")
+
+    app_module = AppModule(source=dataset_location)
+    injector = FlaskInjector(app=app, modules=[app_module]).injector
+    spagbol_instance = injector.get(Spagbol)
+
+    # Initialize SpagbolController with the Spagbol instance
+    controller = SpagbolController(spagbol_instance)
+    controller.load_and_prepare_data(dataset_location)
+
+    logging.debug("Data loaded and embeddings created successfully")
+
+    success_message = "Data loaded and embeddings created successfully"
+    logging.debug(success_message)
+
     try:
-        dataset_location = content['location']
-        logging.debug(f"Request content: {content}")
-        logging.debug(f"Dataset location: {dataset_location}")
-
-        app_module = AppModule(source=dataset_location)
-        injector = FlaskInjector(app=app, modules=[app_module]).injector
-        spagbol_instance = injector.get(Spagbol)
-
-        # Initialize SpagbolController with the Spagbol instance
-        controller = SpagbolController(spagbol_instance)
-        controller.load_and_prepare_data(dataset_location)
-
-        logging.debug("Data loaded and embeddings created successfully")
-        
-        success_message = "Data loaded and embeddings created successfully"
-        logging.debug(success_message)
-
-        try:
-            data_json = spagbol_instance.to_json()
-            logging.debug("converting to json")
-        except Exception as e:
-            logging.error(f"Error converting to JSON: {e}")
-            return jsonify({"error": "Failed to convert data to JSON"}), 500
-
-        return jsonify({"message": success_message, "data": data_json}), 200
-    except KeyError as e:
-        return jsonify({"error": f"Missing key in request: {str(e)}"}), 400
+        data_json = spagbol_instance.to_json()
+        logging.debug("converting to json")
     except Exception as e:
-        return jsonify({"error": "An unexpected error occurred"}), 500
+        logging.error(f"Error converting to JSON: {e}")
+        return jsonify({"error": "Failed to convert data to JSON"}), 500
+
+    return jsonify({"message": success_message, "data": data_json}), 200
+
+
 
 def prepare_spagbol_instance(dataset_location):
     app_module = AppModule(source=dataset_location)
     injector = FlaskInjector(app=app, modules=[app_module]).injector
     return injector.get(Spagbol)
 
+
 def load_data_to_system(spagbol_instance, dataset_location):
     spagbol_instance.load_data(dataset_location)
 
+
 def create_embeddings_for_data(spagbol_instance):
     spagbol_instance.create_embeddings()
-    
+
+
 @app.route('/get_data_points', methods=['GET'])
 @inject
 def get_data_points(spagbol_instance: Spagbol):
@@ -106,7 +106,8 @@ def get_data_points(spagbol_instance: Spagbol):
     except Exception as e:
         # Return an error message if an exception occurs during retrieval
         return jsonify({"error": "An error occurred while retrieving data points"}), 500
-    
+
+
 @app.route('/add_data_point', methods=['POST'])
 @inject
 def add_data_point(spagbol_instance: Spagbol):
@@ -120,6 +121,7 @@ def add_data_point(spagbol_instance: Spagbol):
     except Exception as e:
         # Return an error message if an exception occurs during addition
         return jsonify({"error": "An error occurred while adding the data point"}), 500
+
 
 # Define route for editing a data point
 @app.route('/edit_data_point', methods=['POST'])
@@ -138,7 +140,8 @@ def edit_data_point(spagbol_instance: Spagbol):
     except Exception as e:
         # Return error message for any other exceptions
         return jsonify({"error": "An unexpected error occurred"}), 500
-    
+
+
 # Define route for deleting a data point
 @app.route('/delete_data_point', methods=['DELETE'])
 @inject
@@ -156,7 +159,8 @@ def delete_data_point(spagbol_instance: Spagbol):
     except Exception as e:
         # Return error message for any other exceptions
         return jsonify({"error": "An unexpected error occurred"}), 500
-    
+
+
 # Define route for batch updating data points
 @app.route('/batch_update_data_points', methods=['PUT'])
 @inject
@@ -172,6 +176,7 @@ def batch_update_data_points(spagbol_instance: Spagbol):
         # Return error message if an exception occurs during batch update
         return jsonify({"error": "An error occurred while updating data points"}), 500
 
+
 # Define route for batch deleting data points
 @app.route('/batch_delete_data_points', methods=['DELETE'])
 @inject
@@ -186,6 +191,7 @@ def batch_delete_data_points(spagbol_instance: Spagbol):
     except Exception as e:
         # Return error message if an exception occurs during batch deletion
         return jsonify({"error": "An error occurred while deleting data points"}), 500
+
 
 # Define route for finding similarities in the dataset
 @app.route('/find_similarities', methods=['POST'])
@@ -203,6 +209,7 @@ def find_similarities(spagbol_instance: Spagbol):
     except Exception as e:
         # Return error message for any other exceptions
         return jsonify({"error": "An unexpected error occurred"}), 500
+
 
 # Define route for applying clustering to the dataset
 @app.route('/apply_clustering', methods=['POST'])
@@ -223,7 +230,8 @@ def apply_clustering(spagbol_instance: Spagbol):
     except Exception as e:
         # Return error message for any other exceptions
         return jsonify({"error": "An unexpected error occurred"}), 500
-    
+
+
 @app.route('/export_data', methods=['GET'])
 @inject
 def export_data(spagbol_instance: Spagbol):
@@ -237,7 +245,7 @@ def export_data(spagbol_instance: Spagbol):
     except Exception as e:
         # Return error message if an exception occurs during data export
         return jsonify({"error": "An error occurred while exporting the data"}), 500
-    
+
 
 @app.route('/import_data', methods=['POST'])
 @inject
@@ -256,5 +264,5 @@ def import_data(spagbol_instance: Spagbol):
 
 # Start the Flask application if this script is the main program
 if __name__ == '__main__':
-    #app.run(debug=True)
+    # app.run(debug=True)
     app.run(host='0.0.0.0', debug=True)

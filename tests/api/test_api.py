@@ -15,7 +15,7 @@ from unittest.mock import MagicMock
 from flask_injector import FlaskInjector, inject
 from injector import Binder, Module, singleton
 
-from spagbol.api.spagbol_api import app
+from spagbol_api import app
 
 class MockDataLoader:
     def load_data(self, client, batch_size):

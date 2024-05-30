@@ -12,14 +12,14 @@ from transformers import AutoTokenizer, AutoModel
 import torch
 import torch.nn.functional as F
 import numpy as np
-
 from tqdm import tqdm
-
 from typing import List
+import logging
+import struct
+import base64
 
 from spagbol.embedding.Embedder import Embedder
 
-import logging
 
 class AllMiniLMEmbedder(Embedder):
     """
@@ -57,6 +57,20 @@ class AllMiniLMEmbedder(Embedder):
             print(f"Error initializing tokenizer: {e}")
             return None
 
+    @staticmethod
+    def encode_embedding(embedding: List[float]) -> str:
+        hex_embedding = [struct.pack('<d', val) for val in embedding]
+        hex_sum = hex_embedding[0]
+        for i in range(1, len(hex_embedding)):
+            hex_sum += hex_embedding[i]
+        return base64.b64encode(hex_sum).decode('ascii')
+
+    @staticmethod
+    def decode_embedding(encoded_embedding: str) -> List[float]:
+        byte_array = base64.b64decode(encoded_embedding.encode('ascii'))
+        format_string = f'<384d'
+        return list(struct.unpack(format_string, byte_array))
+
     def embed(self, data: str) -> np.array:
         """
         This method should embed the input data
@@ -75,7 +89,7 @@ class AllMiniLMEmbedder(Embedder):
 
             embeddings = F.normalize(embeddings, p=2, dim=1)
 
-            return embeddings.detach().numpy()
+            return embeddings.cpu().detach().numpy()
         except Exception as e:
             print(f"Error embedding data: {e}")
             return None
@@ -98,13 +112,13 @@ class AllMiniLMEmbedder(Embedder):
                 # Tokenize the input sentence
                 inputs = self._tokenizer([sentence], return_tensors='pt', truncation=True, padding=True).to(self._device)
                 # Get the model's output
-                model_output = self._model(**inputs).last_hidden_state.cpu()
+                model_output = self._model(**inputs).last_hidden_state
                 # Perform mean pooling on the model's output to generate sentence embeddings
                 embeddings = self._mean_pooling(model_output, inputs['attention_mask'])
                 # Normalize the embeddings
                 normalized_embeddings = F.normalize(embeddings, p=2, dim=1)
                 # Append the embeddings to the list
-                embeddings_list.append(normalized_embeddings.detach().numpy())
+                embeddings_list.append(normalized_embeddings.cpu().detach().numpy())
             except Exception as e:
                 logging.debug(f"Error embedding sentence: {e}")
                 print(f"Error embedding sentence: {e}")

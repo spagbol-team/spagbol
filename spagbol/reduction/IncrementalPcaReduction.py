@@ -11,14 +11,15 @@ You should have received a copy of the GNU Affero General Public License along w
 import logging
 
 import numpy as np
-from sklearn.decomposition import PCA
+from sklearn.decomposition import IncrementalPCA
 from typing import Iterable
 
 from spagbol.reduction import DimensionalityReduction
+from spagbol.partitioning import PartitionManager
 from spagbol.errors import UnfitModelError
 
 
-class PcaReduction(DimensionalityReduction):
+class IncrementalPcaReduction(DimensionalityReduction):
     """
     Object for applying PCA dimensionality reduction. Can only work with numerical features.
     You have to fit a model before using transform. You should use scaled or normalized data for better performance
@@ -33,36 +34,47 @@ class PcaReduction(DimensionalityReduction):
         """
 
     def __init__(self):
-        self._model = PCA(n_components=2)
+        self._model = IncrementalPCA(n_components=2)
+        self._output_model = IncrementalPCA(n_components=2)
         self._was_fit = False
 
-    def fit(self, data: Iterable):
+    def fit(self, batched_data: Iterable):
         """
         Fits the PCA reduction model with the passed data
 
-        :param data: Data that will be used to fit the model
+        :param batched_data: Batched dataset for a series of partial fits
         """
-        self._model.fit(data)
+        for batch in batched_data:
+            self._model.partial_fit(batch)
         self._was_fit = True
 
-    def fit_transform(self, data: Iterable) -> np.ndarray:
+    def fit_transform(self, partition_manager: PartitionManager, column_name="input") -> np.ndarray:
         """
-        Fits the PCA model and then applies reduction on the data it was fit on.
+        Partial fits the PCA model on batched data and then applies reduction on the data it was fit on.
 
-        :param data: Data that will be used to fit the model and that will be reduced by the model
+        :param partition_manager: Partition manager that will provide embedding data for fit_transform
+        :param column_name: Data column name - input or output, will fit a separate model for separate columns
         :return: Reduced data
         """
-        logging.debug("Starting PCA fit_transform.")
+        logging.debug("Starting IncrementalPCA fit_transform.")
+        reduced_data = np.ndarray((0, 2))
         try:
-            # Convert data to a numpy array and ensure it's of type float
-            data = np.asarray(data, dtype=object)
-
-            # Convert each element in the array to a numpy array of floats
-            data = np.array([np.asarray(d, dtype=float) for d in data])
-
-            # Proceed with PCA fit_transform
-            reduced_data = np.array(self._model.fit_transform(data))
+            for batch in partition_manager.batched_partition_iterator(100):
+                # Proceed with PCA fit_transform
+                if column_name == "input":
+                    self._model.partial_fit(batch)
+                else:
+                    self._output_model.partial_fit(batch)
             self._was_fit = True
+            for batch in partition_manager.batched_partition_iterator(100):
+                data = np.asarray(batch, dtype=object)
+                data = np.array([np.asarray(d, dtype=float) for d in data])
+                if column_name == "input":
+                    print(np.array(self._model.transform(data)).shape)
+                    print(reduced_data.shape)
+                    reduced_data = np.concatenate([reduced_data, np.array(self._model.transform(data))])
+                else:
+                    reduced_data = np.concatenate([reduced_data, np.array(self._output_model.transform(data))])
             logging.debug("PCA fit_transform completed.")
             return reduced_data
 

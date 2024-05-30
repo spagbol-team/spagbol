@@ -10,6 +10,8 @@ You should have received a copy of the GNU Affero General Public License along w
 
 from abc import ABC, abstractmethod
 import numpy as np
+from typing import List
+
 
 class Embedder(ABC):
     """
@@ -48,7 +50,7 @@ class Embedder(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def embed_batch(self, data: list[str]) -> np.array:
+    def embed_batch(self, data: List[str]) -> np.array:
         """
         This method should embed the input data in batches
         :param data: Input data to be embedded
