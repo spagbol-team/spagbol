@@ -27,6 +27,8 @@ import { Header } from '@/components/Header'
 import { LoadData } from '@/components/LoadData';
 import { fetchData } from './api/apiService'; 
 import { getFromLocalStorage, saveToLocalStorage } from './utils/localStorage'
+import { HuggingFaceExportForm } from './components/HuggingFaceExportForm'
+import { EditDatasetForm } from './components/EditData'
 
 function App() {
   return (
@@ -89,9 +91,35 @@ function HomePage() {
       idx,
       instruction_y: item.instruction_y + OFFSET
     }));
+    console.log(adjustedData)
     setData(adjustedData);
-    saveToLocalStorage('data', JSON.stringify(adjustedData));
   }
+
+  const [isExportPopupOpen, setIsExportPopupOpen] = useState(false);
+  const [isEditPopupOpen, setIsEditPopupOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const [outputValue, setOutputValue] = useState("");
+  const [data_ids, setDataIds] = useState([]);
+
+  const openExportPopup = () => {
+    setIsExportPopupOpen(true);
+  };
+
+  const closeExportPopup = () => {
+    setIsExportPopupOpen(false);
+  };
+
+  const openEditPopup = () => {
+    setIsEditPopupOpen(true);
+  };
+
+  const closeEditPopup = () => {
+    setIsEditPopupOpen(false);
+    setInputValue("")
+    setOutputValue("")
+    setDataIds([])
+  };
+
 
   // Conditional rendering based on whether the data is loaded
   if (!data) {
@@ -100,13 +128,23 @@ function HomePage() {
 
   return (
     <div className="flex flex-col bg-main-bg-color text-third-bg-color h-screen">
-      <Header />
+      <Header 
+        openExportPopup={openExportPopup}
+      />
+      <HuggingFaceExportForm isOpen={isExportPopupOpen} onClose={closeExportPopup} />
+      <EditDatasetForm 
+        isOpen={isEditPopupOpen} onClose={closeEditPopup} 
+        inputValue={inputValue} outputValue={outputValue}
+        data_ids={data_ids}
+      />
       <div className="flex flex-1 h-full flex-wrap md:flex-nowrap">
         <div className="flex-1">
           <Scatter
             data={data}
             onPreviewInstructionData={previewInstructionData}
             onPreviewOutputData={previewOutputData}
+            openEditPopup={openEditPopup}
+            setDataIds={setDataIds}
           />
         </div>
         <div className="flex-1 border-l border-slate-600 py-4 max-w-sm md:max-w-none">
@@ -115,13 +153,20 @@ function HomePage() {
             headers={INSTRUCTION_KEY}
             dataKey={INSTRUCTION_KEY}
             onRemoveData={removeOneData}
+            openEditPopup={openEditPopup}
+            setDataIds={setDataIds}
+            setInputValue={setInputValue}
+            setOutputValue={setOutputValue}
           />
           <Table
             title="Answers"
             data={shownOutputData ? shownOutputData: data}
             headers={ANSWER_KEY}
             dataKey={ANSWER_KEY}
-            onRemoveData={removeOneData}
+            openEditPopup={openEditPopup}
+            setDataIds={setDataIds}
+            setInputValue={setInputValue}
+            setOutputValue={setOutputValue}
           />
         </div>
       </div>

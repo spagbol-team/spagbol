@@ -2,6 +2,7 @@ import json
 import os
 from typing import Dict, List, Optional
 from collections import defaultdict
+from itertools import chain
 
 
 class PartitionMap:
@@ -14,6 +15,8 @@ class PartitionMap:
     def add(self, entry_id: str):
         if self.current_partition is None and self.partition_counter == 0:
             self.propagate_partition()
+        if self.current_partition not in self.map:
+            self.map[self.current_partition] = []
         self.map[self.current_partition].append(entry_id)
 
     def add_batch(self, batch: List[str]):
@@ -64,3 +67,6 @@ class PartitionMap:
         if len(self.map) > 0:
             return list(self.map.keys())[-1]
         return None
+
+    def flatten(self):
+        return list(chain(*list(self.map.values())))

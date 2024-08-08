@@ -82,7 +82,7 @@ class AllMiniLMEmbedder(Embedder):
             inputs = self._tokenizer(data, return_tensors='pt', truncation=True, padding=True).to(self._device)
 
             # Get the model's output
-            model_output = self._model(**inputs)
+            model_output = self._model(**inputs).last_hidden_state
 
             # Perform mean pooling on the model's output to generate sentence embeddings
             embeddings = self._mean_pooling(model_output, inputs['attention_mask'])

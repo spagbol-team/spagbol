@@ -27,7 +27,7 @@ export default class PlotInitializer {
     x: [1, 2, 3, 4],
     y: [10, 15, 13, 17],
     mode: 'markers',
-    type: 'scatter',
+    type: 'scattergl',
     // colorscale: 'Bluered',
     name: this.#INSTRUCTION_NAME,
     marker: {
@@ -78,7 +78,9 @@ export default class PlotInitializer {
     this.instruction_x = [];
     this.instruction_y = [];
     this.text_insturction = [];
+    this.line_indices = [];
     this.text_output = [];
+    this.init_length = 0 
     this.root = document.getElementById('chart1')
     this.chart = null
     this.chartId = 'chart1'
@@ -137,7 +139,7 @@ export default class PlotInitializer {
 
     const layout1 = JSON.parse(JSON.stringify(this.#DEFAULT_LAYOUT))
     layout1.title = 'Clustered 2D Plot of Instructions & Answers Embedding'
-    this.chart = await Plotly.newPlot(this.chartId, {
+    this.chart = await Plotly.react(this.chartId, {
       "data": [
         data1,
         data2,
@@ -145,6 +147,7 @@ export default class PlotInitializer {
       ],
       "layout": layout1,
     }, this.#CONFIG)
+    this.init_length = this.root.data.length
   }
 
   /**
@@ -164,7 +167,7 @@ export default class PlotInitializer {
         Math.max(...[...this.instruction_x, ...this.output_x])
     ],
       y: [median, median],
-      type: 'scatter',
+      type: 'scattergl',
       mode: 'lines',
       name: 'Input & Output Separator',
       line: {
@@ -215,7 +218,7 @@ export default class PlotInitializer {
    */  
   async addMarkPoint(xPoints, yPoints, name, point) {
     const dataProps = {
-      type: 'scatter',
+      type: 'scattergl',
       mode: 'markers',
       marker: {'color': 'red'}
     }
@@ -243,7 +246,7 @@ export default class PlotInitializer {
     return Plotly.addTraces(this.root, {
       x: xPoints,
       y: yPoints,
-      type: 'scatter',
+      type: 'scattergl',
       mode: 'lines',
       line: {
         color: 'green',
@@ -253,13 +256,17 @@ export default class PlotInitializer {
     })
   }
 
+  async addLines(traces){
+    return Plotly.addTraces(this.root, traces)
+  }
+
   /**
    * Resets all traces in the chart.
    */
   resetTraces() {
     console.log('resetting traces')
-    while(this.chart.data.length > this.#UNREMOVED_DATA) {
-      Plotly.deleteTraces(this.root, this.#UNREMOVED_DATA)
+    if (this.line_indices.length > 0){
+      Plotly.deleteTraces(this.root, this.line_indices)
     }
   }
 
@@ -335,7 +342,7 @@ export default class PlotInitializer {
    * @param {Function} options.onEmptyData - The callback function to be called when there is no event data.
    */
   addChartOnSelectedEvent({onSelectionStart, onEventData, onEmptyData}) {
-    this.chart.on('plotly_selected', (eventData) => {
+    this.chart.on('plotly_selected', async (eventData) => {
       console.log('on selected', eventData)
       if (!eventData) {
         this.resetTraces()
@@ -350,7 +357,7 @@ export default class PlotInitializer {
       const normalized_output = []
       const instructions_idxs = []
       const output_idxs = []
-      const lineCreation = []
+      let traces = []
       selectedPoints.map(sp => {
         const [
           input,
@@ -358,29 +365,41 @@ export default class PlotInitializer {
         ] = this.pointToNormalizedData(sp)
         if(this.settings.enableTracing) {
           if(sp.data.name === this.#INSTRUCTION_NAME) {
-            const linePromise = this.addLine(
-              [sp.x, this.output_x[sp.pointIndex]],
-              [sp.y, this.output_y[sp.pointIndex]]
-            )
-            lineCreation.push(linePromise)
+            traces.push({
+              x: [sp.x, this.output_x[sp.pointIndex]],
+              y: [sp.y, this.output_y[sp.pointIndex]],
+              type: 'scattergl',
+              mode: 'lines',
+              line: {
+                color: 'green',
+                width: 2
+              },
+              showlegend: false
+            })
           } else {
-            const linePromise = this.addLine(
-              [sp.x, this.instruction_x[sp.pointIndex]],
-              [sp.y, this.instruction_y[sp.pointIndex]]
-            )
-            lineCreation.push(linePromise)
+            traces.push({
+              x: [sp.x, this.instruction_x[sp.pointIndex]],
+              y: [sp.y, this.instruction_y[sp.pointIndex]],
+              type: 'scattergl',
+              mode: 'lines',
+              line: {
+                color: 'green',
+                width: 2
+              },
+              showlegend: false
+            })
           }
         }
-
         normalized_instruction.push(input)
         instructions_idxs.push(sp.pointIndex)
         normalized_output.push(output)
         output_idxs.push(sp.pointIndex)
       })
-      Promise.all(lineCreation)
-      .then(() => {
-        onEventData(normalized_instruction, instructions_idxs, normalized_output, output_idxs)
-      })
+      await this.addLines(traces)
+      let new_length = this.root.data.length
+      this.line_indices = Array.from({length: new_length - this.init_length}, (_, i) => i + this.init_length);
+      console.log(this.line_indices)
+      onEventData(normalized_instruction, instructions_idxs, normalized_output, output_idxs)
     })
   }
 

@@ -10,3 +10,4 @@ Flask-Injector==0.15.0
 flask>=2.2.0
 flask_cors~=3.0.10
 injector>=0.20.0
+huggingface_hub

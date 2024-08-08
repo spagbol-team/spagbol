@@ -19,9 +19,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useChartData } from '@/context/chart'
 import PlotInitializer from '@/utils/PlotInitializer'
 import { useSettings } from '@/context/settings'
+import { deleteData } from '../api/apiService'
 
 
-export function Scatter({}) {
+export function Scatter({openEditPopup, setDataIds}) {
   // var data_template = [trace1, trace3];
   const [onPreview, setOnPreview] = useState(new Set())
 
@@ -132,16 +133,32 @@ export function Scatter({}) {
 
   function deletePoints() {
     const newData = [...data]
-    const toBeRemoved = [...outputPointsIdx, ...instructionPointsIdx]
-
-    toBeRemoved.map(ipi => {
-      newData.splice(ipi, 1)
+    const toBeRemoved = [...outputPointsIdx]
+    deleteData(outputPointsIdx).then((resp) => {
+      if (resp.ok){
+        if (resp.ok){
+          toBeRemoved.map(ipi => {
+            newData.splice(ipi, 1)
+          })
+          setData(newData)
+          setShownOutputData(null)
+          setOutputPointsIdx([])
+          setInstructionPointsIdx([])
+          setShownInstructionData(null)
+        }
+      }
+      else{
+        alert("Something unexpected happened while deleting these data points")
+      }
+    }).catch((e) => {
+      alert("Something unexpected happened while deleting these data points")
+      console.error(e)
     })
-    setData(newData)
-    setShownOutputData(null)
-    setOutputPointsIdx([])
-    setInstructionPointsIdx([])
-    setShownInstructionData(null)
+  }
+
+  function editPoints(){
+    setDataIds(instructionPointsIdx)
+    openEditPopup()
   }
 
   return (
@@ -149,6 +166,13 @@ export function Scatter({}) {
       <div id="chart1" className="min-h-[85%]"></div>
       <div className="w-full flex justify-end">
         <div>{loading}</div>
+        <button
+          className="px-2 py-0 bg-red-500 z-10 disabled:bg-gray-600"
+          onClick={() => editPoints()}
+          disabled={!outputPointsIdx.length && !instructionPointsIdx.length}
+        >
+          Edit Points 
+        </button>
         <button
           className="px-2 py-0 bg-red-500 mx-10 z-10 disabled:bg-gray-600"
           onClick={() => deletePoints()}

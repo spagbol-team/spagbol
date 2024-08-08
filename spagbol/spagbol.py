@@ -14,10 +14,12 @@ from spagbol.embedding import Embedder
 from spagbol.loading import DataLoader
 from spagbol.reduction import DimensionalityReduction, IncrementalPcaReduction
 from spagbol.partitioning import PartitionManager
-from spagbol.similarity import SimilarityMeasure
+from spagbol.similarity import CosineSimilarity
 from spagbol.errors import NoDatasetError, ClusteringError
 from spagbol.loading import AlpacaLoader
 
+import numpy as np
+import os
 import pandas as pd
 import json
 from typing import Dict, Any, List
@@ -36,8 +38,12 @@ class Spagbol:
         self.clustering_model = clustering_model
         self.reducer = reducer
         self.dataset = None
-        self.input_partition_manager = PartitionManager("/home/razaare/test_input_partition_dir", 1000)
-        self.output_partition_manager = PartitionManager("/home/razaare/test_output_partition_dir", 1000)
+        self.input_partition_manager = PartitionManager(
+            os.path.join(os.path.expanduser("~"), "test_input_partition_dir"), 1000
+        )
+        self.output_partition_manager = PartitionManager(
+             os.path.join(os.path.expanduser("~"), "test_output_partition_dir"), 1000
+        )
 
     def load_data(self, dataset_location: str) -> str:
         # Create an instance of AlpacaLoader with the dataset location
@@ -68,6 +74,7 @@ class Spagbol:
             for j in range(0, len(batch)):
                 result[ids[j]] = embedded_batch[j].tolist()
             pm.add_data(result)
+        pm.save_partition()
 
     def create_embeddings(self):
         if self.dataset is None:
@@ -132,8 +139,27 @@ class Spagbol:
         
         return json_data
 
-    def find_similarities(self):
-        pass
+    def find_similarities(self, query: str) -> List[int]:
+        embedded_query = self.embedder.embed(query)[0]
+        print(embedded_query.shape)
+        thresh = 0.65
+        result = []
+        for entry_ids, batch in self.input_partition_manager.batched_partition_iterator(1000):
+            batch_np = np.array(batch)
+            similarities = CosineSimilarity.compute_batch(embedded_query, batch_np)
+            print(len(similarities))
+            for i, similarity in enumerate(similarities):
+                print(similarity)
+                if similarity > thresh:
+                    result.append(entry_ids[i])
+        for entry_ids, batch in self.output_partition_manager.batched_partition_iterator(1000):
+            batch_np = np.array(batch)
+            similarities = CosineSimilarity.compute_batch(embedded_query, batch_np)
+            for i, similarity in enumerate(similarities):
+                if similarity > thresh:
+                    if entry_ids[i] not in result:
+                        result.append(entry_ids[i])
+        return result
 
     def get_data_points(self, criteria: Dict[str, Any]) -> List[Dict[str, Any]]:
         # Filter the dataset based on the criteria
@@ -154,18 +180,40 @@ class Spagbol:
     
         return transformed_data
 
-    def edit_data_point(self, new_data_point: Dict[str, Any]):
+    def edit_data_points(self, new_data_points: Dict[str, Any], column_name: str):
+        def process_batch(batch, ids, result):
+            embedded_batch = self.embedder.embed_batch(batch)
+            data = np.asarray(embedded_batch, dtype=object)
+            data = np.array([np.asarray(d, dtype=float) for d in data])
+            reduced_data = self.reducer.transform(data, column_name)
+            reduced_data = reduced_data.tolist()
+            result_batch = {ids[i]: reduced_data[i] for i in range(len(reduced_data))}
+            result = {**result, **result_batch}
+            return result
         if self.dataset is None:
             raise NoDatasetError("You need to load the dataset before editing data points")
-        data_point_df = pd.DataFrame.from_dict(new_data_point)
-        data_point_df["input_embedding"] = self.embedder.embed(new_data_point["input"])
-        data_point_df["output_embedding"] = self.embedder.embed(new_data_point["output_embedding"])
-        self.dataset[self.dataset["id"] == new_data_point["id"]] = data_point_df
+        batch = []
+        ids = []
+        batch_size = 100
+        result = {}
+        for data_point_id, data_point_text in new_data_points.items():
+            self.dataset.loc[int(data_point_id), str(column_name)] = data_point_text
+            batch.append(str(data_point_text))
+            ids.append(data_point_id)
+            if len(batch) >= batch_size:
+                result = process_batch(batch, ids, result)
+                batch = []
+                ids = []
+        if len(batch) >= 0:
+            result = process_batch(batch, ids, result)
 
-    def delete_data_point(self, data_point_id):
+        return result
+
+    def delete_data_point(self, data_point_ids):
         if self.dataset is None:
             raise NoDatasetError("You need to load the dataset before editing data points")
-        self.dataset.drop(self.dataset[self.dataset["id"] == data_point_id].index)
+        self.dataset.drop(index=data_point_ids, inplace=True)
+        self.dataset.reset_index(drop=True, inplace=True)
 
     def apply_clustering(self, target_column: str):
         clustered_dataset = self.clustering_model.fit_predict(self.dataset[target_column])

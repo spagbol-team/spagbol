@@ -7,17 +7,31 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
+import os.path
 
 # Import necessary modules from Flask and dependency injection libraries
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response, send_file, after_this_request
 from flask_injector import FlaskInjector, inject
 from injector import inject, singleton, Module, provider
 from flask_cors import CORS
 from spagbol.api.modules import AppModule
+from datasets import Dataset
+import tempfile
+import shutil
+from huggingface_hub import HfApi
 
 import logging
 from spagbol.controllers.spagbol_controller import SpagbolController  # Import the SpagbolController
 from spagbol.spagbol import Spagbol
+from spagbol.errors import NoDatasetError
+from spagbol import DataLoader
+from spagbol import AlpacaLoader
+from spagbol import Embedder
+from spagbol import AllMiniLMEmbedder
+from spagbol import ClusteringModel
+from spagbol import GaussianMixtureClustering
+from spagbol import DimensionalityReduction
+from spagbol import IncrementalPcaReduction
 
 # intialising logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -25,6 +39,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 # Initialise Flask application
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}}, supports_credentials=True)
+injector = {}
 
 
 # Configure dependency injection for the application
@@ -47,6 +62,8 @@ def configure(binder):
 
 @app.route('/load_data', methods=['POST'])
 def load_data():
+    global injector
+
     logging.debug("Entered load_data endpoint")
 
     content = request.json
@@ -76,7 +93,6 @@ def load_data():
         return jsonify({"error": "Failed to convert data to JSON"}), 500
 
     return jsonify({"message": success_message, "data": data_json}), 200
-
 
 
 def prepare_spagbol_instance(dataset_location):
@@ -124,47 +140,98 @@ def add_data_point(spagbol_instance: Spagbol):
 
 
 # Define route for editing a data point
-@app.route('/edit_data_point', methods=['POST'])
+@app.route('/edit_data_points', methods=['POST'])
 @inject
-def edit_data_point(spagbol_instance: Spagbol):
+def edit_data_points(spagbol_instance: Spagbol = injector.get(Spagbol)):
     # Parse request content as JSON
-    data_point = request.json
+    data_points = request.json["data_points"]
     try:
         # Edit the data point using the Spagbol instance
-        spagbol_instance.edit_data_point(data_point)
+        result = {}
+        if "input" in data_points:
+            result["input"] = spagbol_instance.edit_data_points(data_points["input"], "input")
+        if "output" in data_points:
+            result["output"] = spagbol_instance.edit_data_points(data_points["output"], "output")
         # Return success message
-        return jsonify({"message": "Data point edited successfully"}), 200
+        return make_response({"edited_data_points": result})
     except NoDatasetError as e:
         # Return error message if no dataset is loaded
         return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        # Return error message for any other exceptions
-        return jsonify({"error": "An unexpected error occurred"}), 500
+
 
 
 # Define route for deleting a data point
-@app.route('/delete_data_point', methods=['DELETE'])
+@app.route('/delete_data_points', methods=['DELETE'])
 @inject
-def delete_data_point(spagbol_instance: Spagbol):
+def delete_data_point(spagbol_instance: Spagbol = injector.get(Spagbol)):
     # Parse request content as JSON
-    data_point_id = request.json.get('id')
+    data_point_ids = request.json.get('ids')
     try:
         # Delete the data point using the Spagbol instance
-        spagbol_instance.delete_data_point(data_point_id)
+        spagbol_instance.delete_data_point(data_point_ids)
         # Return success message
         return jsonify({"message": "Data point deleted successfully"}), 200
     except NoDatasetError as e:
         # Return error message if no dataset is loaded
         return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        # Return error message for any other exceptions
-        return jsonify({"error": "An unexpected error occurred"}), 500
+
+
+@app.route('/export_to_huggingface', methods=['POST'])
+def export_to_huggingface(spagbol_instance: Spagbol = injector.get(Spagbol)):
+    try:
+        if spagbol_instance.dataset is not None:
+            payload = request.json
+            api = HfApi()
+
+            # TMP HF CREDS
+            # TODO add huggingface login integration
+            api_token = ""
+            repo_name = payload['dataset_id']
+            api.create_repo(
+                repo_name, token=api_token, repo_type="dataset", private=payload["private"],
+                exist_ok=True
+            )
+            hf_dataset = Dataset.from_pandas(spagbol_instance.dataset.drop(
+                columns=["instruction_x", "instruction_y", "output_x", "output_y"]
+            ))
+            return {
+                "message": hf_dataset.push_to_hub(
+                    f"{payload['organization']}/{payload['dataset_id']}",
+                    private=payload["private"])
+            }
+        else:
+            raise NoDatasetError
+    except NoDatasetError:
+        return make_response({"message": "You need to load dataset before exporting it"}, 400)
+
+
+@app.route('/export_dataset', methods=['POST'])
+def export_dataset(spagbol_instance: Spagbol = injector.get(Spagbol)):
+    try:
+        if spagbol_instance.dataset is not None:
+            temp_dir = tempfile.mkdtemp()
+            path_to_csv = os.path.join(temp_dir, "spagbol_edited_dataset.csv")
+            dataset = spagbol_instance.dataset.drop(
+                columns=["instruction_x", "instruction_y", "output_x", "output_y"]
+            )
+            dataset.to_csv(path_to_csv)
+        else:
+            raise NoDatasetError
+    except NoDatasetError:
+        return make_response({"message": "You need to load dataset before exporting it"}, 400)
+
+    @after_this_request
+    def cleanup(response):
+        shutil.rmtree(temp_dir)
+        return response
+
+    return send_file(path_to_csv, as_attachment=True, mimetype="text/csv")
 
 
 # Define route for batch updating data points
 @app.route('/batch_update_data_points', methods=['PUT'])
 @inject
-def batch_update_data_points(spagbol_instance: Spagbol):
+def batch_update_data_points(spagbol_instance: Spagbol = injector.get(Spagbol)):
     # Parse request content as JSON for batch update
     data_points = request.json
     try:
@@ -180,7 +247,7 @@ def batch_update_data_points(spagbol_instance: Spagbol):
 # Define route for batch deleting data points
 @app.route('/batch_delete_data_points', methods=['DELETE'])
 @inject
-def batch_delete_data_points(spagbol_instance: Spagbol):
+def batch_delete_data_points(spagbol_instance: Spagbol = injector.get(Spagbol)):
     # Parse request content as JSON for batch delete
     data_point_ids = request.json
     try:
@@ -196,25 +263,23 @@ def batch_delete_data_points(spagbol_instance: Spagbol):
 # Define route for finding similarities in the dataset
 @app.route('/find_similarities', methods=['POST'])
 @inject
-def find_similarities(spagbol_instance: Spagbol):
+def find_similarities(spagbol_instance: Spagbol = injector.get(Spagbol)):
     # Check for Request Data if needed
     # Find similarities using the Spagbol instance
     try:
-        similarities = spagbol_instance.find_similarities()
+        payload = request.json
+        result_ids = spagbol_instance.find_similarities(payload["query"])
         # Return the similarities
-        return jsonify(similarities), 200
+        return make_response({"datapoint_ids": result_ids}, 200)
     except NoDatasetError as e:
         # Return error message if no dataset is loaded
         return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        # Return error message for any other exceptions
-        return jsonify({"error": "An unexpected error occurred"}), 500
 
 
 # Define route for applying clustering to the dataset
 @app.route('/apply_clustering', methods=['POST'])
 @inject
-def apply_clustering(spagbol_instance: Spagbol):
+def apply_clustering(spagbol_instance: Spagbol = injector.get(Spagbol)):
     # Check for Request Data if needed
     try:
         # Apply clustering using the Spagbol instance
@@ -232,24 +297,9 @@ def apply_clustering(spagbol_instance: Spagbol):
         return jsonify({"error": "An unexpected error occurred"}), 500
 
 
-@app.route('/export_data', methods=['GET'])
-@inject
-def export_data(spagbol_instance: Spagbol):
-    # Retrieve query parameters as criteria for export
-    criteria = request.args.to_dict()
-    try:
-        # Export data based on the provided criteria using the Spagbol instance
-        dataset = spagbol_instance.export_data(criteria)
-        # Return the exported dataset
-        return jsonify(dataset), 200
-    except Exception as e:
-        # Return error message if an exception occurs during data export
-        return jsonify({"error": "An error occurred while exporting the data"}), 500
-
-
 @app.route('/import_data', methods=['POST'])
 @inject
-def import_data(spagbol_instance: Spagbol):
+def import_data(spagbol_instance: Spagbol = injector.get(Spagbol)):
     # Parse request content as JSON for data import
     data_to_import = request.json
     try:

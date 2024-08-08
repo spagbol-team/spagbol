@@ -56,32 +56,48 @@ export const postData = async (endpoint, data) => {
 };
 
 /**
- * Deletes a data point from the server.
+ * Deletes a data points from the server.
  * @param {number} dataPointId - The unique identifier of the data point to delete.
  * @returns {Promise<Object>} A promise that resolves with the deletion result or logs an error.
  */
-export const deleteData = async (dataPointId) => {
+export const deleteData = async (dataPointIds) => {
   try {
     // Initialize the DELETE request to remove the data point
-    const response = await fetch(`${API_BASE_URL}/delete_data_point`, {
+    const response = await fetch(`${API_BASE_URL}/delete_data_points`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ id: dataPointId }),
+      body: JSON.stringify({ ids: dataPointIds }),
     });
 
     // Check if the server's response indicates a successful deletion
-    if (!response.ok) {
-      // If not successful, throw an error with the status code
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    // Parse and return the server's response as JSON
-    return await response.json();
+    return response
   } catch (error) {
     // Log any errors that occur during the deletion process
     console.error('Delete error:', error);
   }
 };
 
+
+export const downloadFile = async (route) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/${route}`, {
+      method: "POST",
+    })
+
+    let blob = await response.blob()
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = "spagbol_edited_dataset.csv"
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove()
+  } 
+  catch(err) {
+    console.error(err)
+  }
+}
